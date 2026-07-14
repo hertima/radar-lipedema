@@ -1,0 +1,13 @@
+{
+  "name": "Radar Lipedema",
+  "short_name": "Radar Lipedema",
+  "description": "Entenda os padrões do seu corpo e tome melhores decisões.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf6ff",
+  "theme_color": "#6e34d8",
+  "icons": [
+    { "src": "imagem/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "imagem/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
