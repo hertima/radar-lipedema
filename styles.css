@@ -65,52 +65,12 @@ button:focus-visible {
 }
 
 .prototype {
-  display: grid;
-  grid-template-columns: minmax(148px, 190px) minmax(0, var(--phone-width));
+  display: flex;
   justify-content: center;
   align-items: center;
-  gap: 32px;
   min-height: 100svh;
   min-height: 100dvh;
   padding: 28px;
-}
-
-.screen-rail {
-  display: grid;
-  gap: 10px;
-  align-content: start;
-  padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.62);
-  box-shadow: 0 18px 48px rgba(74, 35, 107, 0.1);
-  backdrop-filter: blur(18px);
-}
-
-.rail-kicker {
-  margin: 0 0 8px;
-  color: var(--purple-deep);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.rail-button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  border: 0;
-  border-radius: 14px;
-  padding: 0 12px;
-  color: #5c5069;
-  background: transparent;
-  font-weight: 750;
-}
-
-.rail-button:hover,
-.rail-button.active {
-  color: var(--purple-deep);
-  background: #f2e9ff;
 }
 
 .phone {
@@ -3205,10 +3165,6 @@ input[type="range"] {
     min-height: 100svh;
     min-height: 100dvh;
     padding: 0;
-  }
-
-  .screen-rail {
-    display: none;
   }
 
   .phone {

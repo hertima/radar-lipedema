@@ -1,7 +1,6 @@
 const phone = document.querySelector(".phone");
 const screens = Array.from(document.querySelectorAll(".screen"));
 const navButtons = Array.from(document.querySelectorAll("[data-target]"));
-const railButtons = Array.from(document.querySelectorAll(".rail-button"));
 const bottomButtons = Array.from(document.querySelectorAll(".bottom-nav button"));
 const toast = document.querySelector(".toast");
 const settingsSheet = document.querySelector(".settings-sheet");
@@ -1326,7 +1325,6 @@ function showScreen(screenId) {
   });
 
   phone.dataset.screen = screenId;
-  setActiveButton(railButtons, screenId);
   setActiveButton(bottomButtons, screenId === "login" ? "home" : screenId);
 }
 
