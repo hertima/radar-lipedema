@@ -3,9 +3,12 @@
 Este projeto agora tem:
 
 - frontend do app em `index.html`, `styles.css`, `app.js`;
+- imagens e assets da pasta `imagem/`;
 - servidor Node em `server.js`;
 - banco PostgreSQL com schema em `db/schema.sql`;
 - deploy por Docker Compose.
+
+Ou seja: o app inteiro sobe na VPS. O HTML tamb&eacute;m vai junto dentro do container `app`.
 
 ## 1. Preparar a VPS
 
@@ -49,6 +52,13 @@ APP_PORT=3000
 
 ```bash
 docker compose up -d --build
+```
+
+Ou use o script:
+
+```bash
+chmod +x scripts/deploy-vps.sh
+APP_DIR=/opt/radar-lipedema ./scripts/deploy-vps.sh
 ```
 
 Verificar:
