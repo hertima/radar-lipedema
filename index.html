@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Radar Lipedema</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <svg aria-hidden="true" class="icon-sprite">
+      <symbol id="i-home" viewBox="0 0 24 24">
+        <path d="M3 11.5 12 4l9 7.5"></path>
+        <path d="M5 10.5V20h5v-5h4v5h5v-9.5"></path>
+      </symbol>
+      <symbol id="i-drop" viewBox="0 0 24 24">
+        <path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11Z"></path>
+      </symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24">
+        <path d="M4 20V10"></path>
+        <path d="M10 20V4"></path>
+        <path d="M16 20v-7"></path>
+        <path d="M22 20V8"></path>
+      </symbol>
+      <symbol id="i-insight" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8"></circle>
+        <path d="M12 7v5l3 2"></path>
+        <path d="M5 19 3 21M19 19l2 2"></path>
+      </symbol>
+      <symbol id="i-user" viewBox="0 0 24 24">
+        <path d="M20 21a8 8 0 0 0-16 0"></path>
+        <circle cx="12" cy="8" r="4"></circle>
+      </symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24">
+        <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"></path>
+        <path d="M3 12h3m12 0h3M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"></path>
+      </symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24">
+        <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+      </symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24">
+        <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+        <path d="M10 21h4"></path>
+      </symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24">
+        <rect x="4" y="5" width="16" height="15" rx="2"></rect>
+        <path d="M8 3v4M16 3v4M4 10h16"></path>
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="m5 12 4 4L19 6"></path>
+      </symbol>
+      <symbol id="i-star" viewBox="0 0 24 24">
+        <path d="m12 3 2.7 5.5 6.1.9-4.4 4.2 1 6-5.4-2.9-5.4 2.9 1-6-4.4-4.2 6.1-.9L12 3Z"></path>
+      </symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24">
+        <path d="M12 19.2s-7.2-4.7-7.2-9.1A4 4 0 0 1 12 7.8a4 4 0 0 1 7.2 2.3c0 4.4-7.2 9.1-7.2 9.1Z"></path>
+      </symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4.2"></circle>
+        <path d="M12 2.8v2.4M12 18.8v2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2.8 12h2.4M18.8 12h2.4M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"></path>
+      </symbol>
+      <symbol id="i-trend" viewBox="0 0 24 24">
+        <path d="M4.5 17.5 9 13l3.5 3.2 6.8-8.2"></path>
+        <path d="M16.2 8h3.1v3.1"></path>
+        <circle cx="4.5" cy="17.5" r="1.4"></circle>
+        <circle cx="9" cy="13" r="1.4"></circle>
+        <circle cx="12.5" cy="16.2" r="1.4"></circle>
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="m9 18 6-6-6-6"></path>
+      </symbol>
+      <symbol id="i-crown" viewBox="0 0 24 24">
+        <path d="m3 8 5 4 4-7 4 7 5-4-2 11H5L3 8Z"></path>
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24">
+        <path d="M6 3h8l4 4v14H6V3Z"></path>
+        <path d="M14 3v5h5M9 13h6M9 17h6"></path>
+      </symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24">
+        <path d="M4 8h4l1.5-2h5L16 8h4v11H4V8Z"></path>
+        <circle cx="12" cy="13.5" r="3.5"></circle>
+      </symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24">
+        <path d="M4 20h4L19 9l-4-4L4 16v4Z"></path>
+        <path d="m13.5 6.5 4 4"></path>
+      </symbol>
+    </svg>
+
+    <div class="prototype">
+      <aside class="screen-rail" aria-label="Escolha de tela">
+        <p class="rail-kicker">Radar Lipedema</p>
+        <button class="rail-button active" type="button" data-target="login">
+          <svg class="icon"><use href="#i-lock"></use></svg>
+          <span>Login</span>
+        </button>
+        <button class="rail-button" type="button" data-target="home">
+          <svg class="icon"><use href="#i-home"></use></svg>
+          <span>Home</span>
+        </button>
+        <button class="rail-button" type="button" data-target="register">
+          <svg class="icon"><use href="#i-drop"></use></svg>
+          <span>Registrar</span>
+        </button>
+        <button class="rail-button" type="button" data-target="history">
+          <svg class="icon"><use href="#i-chart"></use></svg>
+          <span>Hist&oacute;rico</span>
+        </button>
+        <button class="rail-button" type="button" data-target="insights">
+          <svg class="icon"><use href="#i-insight"></use></svg>
+          <span>Insights</span>
+        </button>
+        <button class="rail-button" type="button" data-target="settings">
+          <svg class="icon"><use href="#i-gear"></use></svg>
+          <span>Ajustes</span>
+        </button>
+      </aside>
+
+      <main class="phone" data-screen="login" aria-label="Aplicativo Radar Lipedema">
+        <div class="device-status" aria-hidden="true">
+          <span>9:41</span>
+          <span class="device-icons">
+            <span></span><span></span><span></span>
+          </span>
+        </div>
+
+        <div class="screen-stack">
+          <section class="screen screen-login active" id="login" aria-label="Login">
+            <div class="login-art">
+              <img src="imagem/imagem/logo radar lipedema.png" alt="Radar Lipedema">
+            </div>
+            <p class="screen-copy">Entenda os padr&otilde;es do seu corpo e tome melhores decis&otilde;es.</p>
+
+            <div class="login-actions">
+              <button class="primary-button" type="button" data-start-app>Criar conta</button>
+            </div>
+
+            <label class="field-label">
+              <span>E-mail</span>
+              <input type="email" placeholder="ana@email.com">
+            </label>
+            <label class="field-label">
+              <span>Senha</span>
+              <input type="password" placeholder="********">
+            </label>
+
+            <button class="text-button" type="button" data-toast="Link de recupera&ccedil;&atilde;o enviado">Esqueci minha senha</button>
+            <p class="login-footer">J&aacute; tem uma conta? <button type="button" data-start-app>Entrar</button></p>
+          </section>
+
+          <section class="screen" id="home" aria-labelledby="home-title">
+            <header class="screen-header">
+              <div class="profile-line">
+                <button class="avatar" type="button" data-avatar-trigger aria-label="Alterar foto do perfil">
+                  <span data-avatar-initial>A</span>
+                </button>
+                <div>
+                  <h2 id="home-title">Ol&aacute;, Ana</h2>
+                  <p>Plano Premium</p>
+                </div>
+              </div>
+              <button class="icon-button" type="button" aria-label="Lembretes" data-toast="Lembrete para 20:00 ativado">
+                <svg class="icon"><use href="#i-bell"></use></svg>
+              </button>
+            </header>
+
+            <section class="evolution-score-card card" aria-label="Score de evolucao">
+              <div class="score-main">
+                <span>Score de evolu&ccedil;&atilde;o</span>
+                <strong><output data-evolution-score>78</output><small>/100</small></strong>
+              </div>
+              <div class="score-status">
+                <span class="score-stars" aria-hidden="true" data-evolution-stars>★ ★ ☆</span>
+                <span class="score-badge" data-evolution-label>Bom</span>
+              </div>
+              <p data-evolution-summary>Bom progresso: continue registrando edema, medidas, h&aacute;bitos e ciclo.</p>
+            </section>
+
+            <article class="hero-card">
+              <div>
+                <p class="mini-label">Sequ&ecirc;ncia atual</p>
+                <strong>12 dias</strong>
+                <span>&Uacute;ltimo trabalho!</span>
+              </div>
+              <img src="imagem/imagem/havatar 01.png" alt="Mascote da sequencia">
+            </article>
+
+            <section class="card cycle-card" aria-label="Resumo do ciclo">
+              <div>
+                <p class="section-label">Resumo do ciclo</p>
+                <span>Fase atual</span>
+                <strong>Fase Folicular</strong>
+                <small>Dia 7 de 28</small>
+              </div>
+              <div class="cycle-ring" aria-label="25 por cento do ciclo"></div>
+            </section>
+
+            <section class="card symptoms-card" aria-label="Sintomas de hoje">
+              <div class="card-title-row">
+                <p class="section-label">Sintomas de hoje</p>
+                <span>m&eacute;dia 5.5/10</span>
+              </div>
+              <div class="metric-row" style="--value: 60%; --color: #f43f82">
+                <span>Dor</span><span>6/10</span><i></i>
+              </div>
+              <div class="metric-row" style="--value: 50%; --color: #8b5cf6">
+                <span>Edema</span><span>5/10</span><i></i>
+              </div>
+              <div class="metric-row" style="--value: 70%; --color: #f59e2e">
+                <span>Sensibilidade</span><span>7/10</span><i></i>
+              </div>
+              <div class="metric-row" style="--value: 40%; --color: #13b8b0">
+                <span>Humor</span><span>4/10</span><i></i>
+              </div>
+            </section>
+
+            <section class="card dominant-card symptom-sensibilidade" aria-label="Sintoma predominante" data-dominant-card>
+              <div>
+                <p>Sintoma predominante</p>
+                <strong data-dominant-name>Sensibilidade</strong>
+                <span data-dominant-level>Moderado</span>
+              </div>
+              <div class="body-image-frame">
+                <img class="body-map-image" src="imagem/sensibilidade-card.png" alt="Mapa corporal de sensibilidade" data-dominant-image>
+              </div>
+            </section>
+
+            <article class="insight-card" data-target="insights" role="button" tabindex="0">
+              <span class="insight-icon">
+                <svg class="icon"><use href="#i-star"></use></svg>
+              </span>
+              <div>
+                <strong>Insight r&aacute;pido</strong>
+                <p>Seus sintomas de sensibilidade tendem a aumentar na fase l&uacute;tea.</p>
+              </div>
+            </article>
+
+            <section class="achievement-strip" aria-label="Conquistas recentes">
+              <button type="button" data-toast="Conquista: Primeiro Registro">
+                <img src="imagem/imagem/primeiro registro.png" alt="Primeiro registro">
+              </button>
+              <button type="button" data-toast="Conquista: 7 Dias Seguidos">
+                <img src="imagem/imagem/7 dias seguido.png" alt="Sete dias seguidos">
+              </button>
+              <button type="button" data-toast="Conquista: Exploradora">
+                <img src="imagem/imagem/exploradora 10 registros.png" alt="Exploradora">
+              </button>
+            </section>
+          </section>
+
+          <section class="screen" id="register" aria-labelledby="register-title">
+            <header class="screen-header center-header">
+              <button class="icon-button" type="button" data-target="home" aria-label="Voltar">
+                <span class="x-icon"></span>
+              </button>
+              <h2 id="register-title">Registrar</h2>
+              <button class="icon-button success" type="button" data-save-register aria-label="Salvar">
+                <svg class="icon"><use href="#i-check"></use></svg>
+              </button>
+            </header>
+
+            <div class="segmented" role="tablist" aria-label="Tipo de registro" data-tab-group="register">
+              <button class="active" type="button" data-tab="cycle">Ciclo</button>
+              <button type="button" data-tab="symptoms">Sintomas</button>
+            </div>
+
+            <section class="tab-panel active" data-panel="cycle">
+              <p class="section-label">Fluxo menstrual</p>
+              <div class="flow-grid">
+                <button type="button">
+                  <svg class="icon"><use href="#i-drop"></use></svg>
+                  <span>Nenhum</span>
+                </button>
+                <button type="button">
+                  <svg class="icon"><use href="#i-drop"></use></svg>
+                  <span>Leve</span>
+                </button>
+                <button class="active" type="button">
+                  <svg class="icon"><use href="#i-drop"></use></svg>
+                  <span>Moderado</span>
+                </button>
+                <button type="button">
+                  <svg class="icon"><use href="#i-drop"></use></svg>
+                  <span>Intenso</span>
+                </button>
+              </div>
+              <div class="cycle-options">
+                <button class="active" type="button" data-toast="Dia marcado como fase folicular">Folicular</button>
+                <button type="button" data-toast="Fase ovulat&oacute;ria selecionada">Ovulat&oacute;ria</button>
+                <button type="button" data-toast="Fase l&uacute;tea selecionada">L&uacute;tea</button>
+                <button type="button" data-toast="Menstrua&ccedil;&atilde;o registrada">Menstrual</button>
+              </div>
+            </section>
+
+            <section class="card range-card tab-panel active" data-panel="symptoms">
+              <p class="section-label">Sintomas de hoje</p>
+              <span class="subcopy">Como voc&ecirc; est&aacute; se sentindo?</span>
+              <label class="range-line" style="--color: #f43f82">
+                <span>Dor <output>6</output></span>
+                <input type="range" min="0" max="10" value="6" data-symptom="dor">
+              </label>
+              <label class="range-line" style="--color: #8b5cf6">
+                <span>Edema <output>5</output></span>
+                <input type="range" min="0" max="10" value="5" data-symptom="edema">
+              </label>
+              <label class="range-line" style="--color: #f59e2e">
+                <span>Sensibilidade <output>7</output></span>
+                <input type="range" min="0" max="10" value="7" data-symptom="sensibilidade">
+              </label>
+              <label class="range-line" style="--color: #13b8b0">
+                <span>Humor <output>4</output></span>
+                <input type="range" min="0" max="10" value="4" data-symptom="humor">
+              </label>
+              <div class="register-tools">
+                <button type="button" data-register-panel="pain">
+                  <svg class="icon"><use href="#i-edit"></use></svg>
+                  <span>Registrar dor</span>
+                </button>
+                <button type="button" data-register-panel="photos">
+                  <svg class="icon"><use href="#i-camera"></use></svg>
+                  <span>Registrar fotos</span>
+                </button>
+              </div>
+
+              <section class="register-hub" aria-label="Registros para insights">
+                <button type="button" data-register-panel="edema">
+                  <span class="register-item-icon edema"><svg class="icon"><use href="#i-drop"></use></svg></span>
+                  <span>Edema<small>N&iacute;vel de incha&ccedil;o</small></span>
+                  <svg class="icon"><use href="#i-arrow"></use></svg>
+                </button>
+                <button type="button" data-register-panel="measures">
+                  <span class="register-item-icon measures"><svg class="icon"><use href="#i-edit"></use></svg></span>
+                  <span>Medidas<small>Coxa, panturrilha, tornozelo</small></span>
+                  <svg class="icon"><use href="#i-arrow"></use></svg>
+                </button>
+                <button type="button" data-register-panel="weight">
+                  <span class="register-item-icon weight"><svg class="icon"><use href="#i-chart"></use></svg></span>
+                  <span>Peso<small>Peso corporal</small></span>
+                  <svg class="icon"><use href="#i-arrow"></use></svg>
+                </button>
+                <button type="button" data-register-panel="treatments">
+                  <span class="register-item-icon treatments"><svg class="icon"><use href="#i-heart"></use></svg></span>
+                  <span>Tratamentos<small>Drenagem, fisioterapia, etc.</small></span>
+                  <svg class="icon"><use href="#i-arrow"></use></svg>
+                </button>
+                <button type="button" data-register-panel="habits">
+                  <span class="register-item-icon habits"><svg class="icon"><use href="#i-trend"></use></svg></span>
+                  <span>H&aacute;bitos<small>&Aacute;gua, meia, exerc&iacute;cios</small></span>
+                  <svg class="icon"><use href="#i-arrow"></use></svg>
+                </button>
+                <button type="button" data-register-panel="symptoms-extra">
+                  <span class="register-item-icon symptoms"><svg class="icon"><use href="#i-sun"></use></svg></span>
+                  <span>Sintomas<small>Hematomas, sensibilidade</small></span>
+                  <svg class="icon"><use href="#i-arrow"></use></svg>
+                </button>
+                <button type="button" data-register-panel="cycle-record">
+                  <span class="register-item-icon cycle"><svg class="icon"><use href="#i-calendar"></use></svg></span>
+                  <span>Ciclo<small>Fluxo, fase e sintomas</small></span>
+                  <svg class="icon"><use href="#i-arrow"></use></svg>
+                </button>
+              </section>
+            </section>
+
+            <label class="notes-field">
+              <span>Observa&ccedil;&otilde;es <small>(opcional)</small></span>
+              <textarea placeholder="Como foi seu dia?"></textarea>
+            </label>
+
+            <button class="primary-button save-button" type="button" data-save-register>Salvar registro</button>
+          </section>
+
+          <section class="screen" id="history" aria-labelledby="history-title">
+            <header class="screen-header center-header">
+              <span></span>
+              <h2 id="history-title">Hist&oacute;rico</h2>
+              <button class="icon-button" type="button" aria-label="Calendario" data-history-tab="cycle-history">
+                <svg class="icon"><use href="#i-calendar"></use></svg>
+              </button>
+            </header>
+
+            <div class="tabs" role="tablist" aria-label="Historico" data-tab-group="history">
+              <button class="active" type="button" data-tab="patterns">Padr&otilde;es</button>
+              <button type="button" data-tab="cycle-history">Ciclo</button>
+              <button type="button" data-tab="symptom-history">Sintomas</button>
+            </div>
+
+            <div class="period-picker">
+              <button type="button" aria-label="Anterior" data-period-step="-1">
+                <svg class="icon"><use href="#i-arrow"></use></svg>
+              </button>
+              <strong data-period-label>&Uacute;ltimos 3 ciclos</strong>
+              <button type="button" aria-label="Proximo" data-period-step="1">
+                <svg class="icon flip"><use href="#i-arrow"></use></svg>
+              </button>
+            </div>
+
+            <section class="card chart-card tab-panel active" data-panel="patterns" aria-label="Correlacao de sintomas">
+              <h3 class="chart-title">Correla&ccedil;&atilde;o de sintomas</h3>
+              <div class="legend">
+                <button type="button" class="legend-item" data-series="dor"><i style="--color:#f43f82"></i>Dor</button>
+                <button type="button" class="legend-item" data-series="edema"><i style="--color:#8b5cf6"></i>Edema</button>
+                <button type="button" class="legend-item" data-series="sensibilidade"><i style="--color:#f59e2e"></i>Sensibilidade</button>
+                <button type="button" class="legend-item" data-series="humor"><i style="--color:#19b9b2"></i>Humor</button>
+              </div>
+              <svg class="chart" viewBox="0 0 360 255" role="img" aria-label="Grafico de sintomas por fase">
+                <rect x="154" y="26" width="72" height="180" class="phase phase-lutea"></rect>
+                <rect x="296" y="76" width="56" height="130" class="phase phase-menstrual"></rect>
+                <g class="grid">
+                  <path d="M30 44H348M30 98H348M30 152H348M30 206H348"></path>
+                  <path d="M30 26V212M100 26V212M170 26V212M240 26V212M310 26V212"></path>
+                </g>
+                <path class="symptom-area pink-area" data-series="dor" d="M252 136 C264 92 277 82 292 104 C305 124 315 124 326 114 L326 206 L252 206Z"></path>
+                <path class="line teal" data-series="humor" d="M30 85 C55 122 78 118 104 94 C130 69 151 77 174 92 C199 74 221 83 244 91 C267 68 282 39 322 52"></path>
+                <path class="line pink" data-series="dor" d="M30 136 C56 166 82 157 106 124 C132 94 158 91 182 106 C207 123 228 126 250 112 C276 98 298 112 322 106"></path>
+                <path class="line orange" data-series="sensibilidade" d="M30 164 C54 186 80 184 104 160 C130 134 154 124 176 140 C202 153 224 146 248 132 C273 124 298 128 322 126"></path>
+                <path class="line purple" data-series="edema" d="M30 156 C56 158 82 166 104 178 C130 191 154 184 176 187 C202 199 224 180 248 172 C273 160 298 160 322 162"></path>
+                <g class="dots pink" data-series="dor">
+                  <circle cx="30" cy="136" r="5"></circle><circle cx="78" cy="158" r="5"></circle><circle cx="126" cy="104" r="5"></circle><circle cx="174" cy="99" r="5"></circle><circle cx="222" cy="123" r="5"></circle><circle cx="270" cy="103" r="5"></circle><circle cx="322" cy="106" r="5"></circle>
+                </g>
+                <g class="dots purple" data-series="edema">
+                  <circle cx="30" cy="156" r="5"></circle><circle cx="78" cy="164" r="5"></circle><circle cx="126" cy="188" r="5"></circle><circle cx="174" cy="186" r="5"></circle><circle cx="222" cy="184" r="5"></circle><circle cx="270" cy="161" r="5"></circle><circle cx="322" cy="162" r="5"></circle>
+                </g>
+                <g class="dots orange" data-series="sensibilidade">
+                  <circle cx="30" cy="164" r="5"></circle><circle cx="78" cy="184" r="5"></circle><circle cx="126" cy="137" r="5"></circle><circle cx="174" cy="140" r="5"></circle><circle cx="222" cy="148" r="5"></circle><circle cx="270" cy="126" r="5"></circle><circle cx="322" cy="126" r="5"></circle>
+                </g>
+                <g class="dots teal" data-series="humor">
+                  <circle cx="30" cy="85" r="5"></circle><circle cx="78" cy="118" r="5"></circle><circle cx="126" cy="73" r="5"></circle><circle cx="174" cy="92" r="5"></circle><circle cx="222" cy="84" r="5"></circle><circle cx="270" cy="44" r="5"></circle><circle cx="322" cy="52" r="5"></circle>
+                </g>
+              </svg>
+              <div class="phase-labels">
+                <span>Folicular</span><span>Ovulat&oacute;ria</span><span>L&uacute;tea</span><span>Menstrual</span>
+              </div>
+            </section>
+
+            <section class="history-insights tab-panel active" data-panel="patterns" aria-label="Insights do periodo">
+              <h3 class="insights-title">Insights deste per&iacute;odo</h3>
+              <div class="history-insight-card">
+                <button type="button" data-toast="Insight: dor aumenta antes da menstrua&ccedil;&atilde;o">
+                  <span class="history-insight-icon pink"><svg class="icon"><use href="#i-heart"></use></svg></span>
+                  <strong>Dor aumenta em m&eacute;dia<br>2 dias antes da menstrua&ccedil;&atilde;o.</strong>
+                </button>
+                <button type="button" data-toast="Insight: sensibilidade alta na fase l&uacute;tea">
+                  <span class="history-insight-icon orange"><svg class="icon"><use href="#i-sun"></use></svg></span>
+                  <strong>Sensibilidade mais alta<br>na fase l&uacute;tea.</strong>
+                </button>
+                <button type="button" data-toast="Insight: humor melhor na fase folicular">
+                  <span class="history-insight-icon teal"><svg class="icon"><use href="#i-trend"></use></svg></span>
+                  <strong>Seu humor melhora na<br>fase folicular.</strong>
+                </button>
+              </div>
+            </section>
+
+            <section class="card cycle-timeline tab-panel" data-panel="cycle-history" aria-label="Historico do ciclo">
+              <p class="section-label">Linha do ciclo</p>
+              <div class="cycle-days">
+                <span class="done">1</span><span class="done">2</span><span class="done">3</span><span class="done">4</span><span class="done">5</span><span class="done">6</span><span class="active">7</span>
+                <span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
+              </div>
+              <article class="phase-summary">
+                <strong>Fase Folicular</strong>
+                <p>Energia em alta, humor melhor e sensibilidade reduzindo nos &uacute;ltimos 3 registros.</p>
+              </article>
+            </section>
+
+            <section class="card symptom-table tab-panel" data-panel="symptom-history" aria-label="Historico de sintomas">
+              <p class="section-label">M&eacute;dias recentes</p>
+              <div><span>Dor</span><strong>6.0</strong><i style="--value: 60%; --color: #f43f82"></i></div>
+              <div><span>Edema</span><strong>5.0</strong><i style="--value: 50%; --color: #8b5cf6"></i></div>
+              <div><span>Sensibilidade</span><strong>7.0</strong><i style="--value: 70%; --color: #f59e2e"></i></div>
+              <div><span>Humor</span><strong>4.0</strong><i style="--value: 40%; --color: #13b8b0"></i></div>
+            </section>
+          </section>
+
+          <section class="screen" id="insights" aria-labelledby="insights-title">
+            <header class="screen-header center-header">
+              <span></span>
+              <h2 id="insights-title">Insights</h2>
+              <button class="icon-button" type="button" data-premium-action="pdf-report" aria-label="Relatorio">
+                <svg class="icon"><use href="#i-file"></use></svg>
+              </button>
+            </header>
+
+            <article class="insights-hero">
+              <div>
+                <p class="mini-label">Padr&otilde;es descobertos</p>
+                <strong>3 correla&ccedil;&otilde;es</strong>
+                <span>Baseado nos &uacute;ltimos 28 dias</span>
+              </div>
+              <img src="imagem/imagem/padroes descoberto.png" alt="Padroes descobertos">
+            </article>
+
+            <section class="insight-list deep-insights" aria-label="Insights personalizados">
+              <article>
+                <span class="round-icon pink"></span>
+                <p><strong>Dor</strong> aumenta em m&eacute;dia 2 dias antes da menstrua&ccedil;&atilde;o.</p>
+              </article>
+              <article>
+                <span class="round-icon orange"></span>
+                <p><strong>Sensibilidade</strong> fica mais alta na fase l&uacute;tea.</p>
+              </article>
+              <article>
+                <span class="round-icon teal"></span>
+                <p><strong>Humor</strong> melhora na fase folicular.</p>
+              </article>
+            </section>
+
+            <section class="card forecast-card" aria-label="Previsao">
+              <div class="card-title-row">
+                <p class="section-label">Pr&oacute;ximos dias</p>
+                <span>previs&atilde;o</span>
+              </div>
+              <div class="forecast-grid">
+                <article><strong>Hoje</strong><span>Dor 6</span><i class="risk mid"></i></article>
+                <article><strong>Amanh&atilde;</strong><span>Dor 7</span><i class="risk high"></i></article>
+                <article><strong>+2 dias</strong><span>Edema 6</span><i class="risk mid"></i></article>
+              </div>
+            </section>
+
+            <section class="card report-card" aria-label="Recursos premium">
+              <p class="section-label">Recursos Premium</p>
+              <button type="button" data-premium-action="cycle-comparison">
+                <svg class="icon"><use href="#i-chart"></use></svg>
+                <span>Comparativos entre ciclos<small data-premium-summary="cycle-comparison">3 ciclos analisados</small></span>
+              </button>
+              <button type="button" data-premium-action="pdf-report">
+                <svg class="icon"><use href="#i-file"></use></svg>
+                <span>Relat&oacute;rios detalhados em PDF<small data-premium-summary="pdf-report">Score, gr&aacute;ficos e fotos</small></span>
+              </button>
+              <button type="button" data-premium-action="data-export">
+                <svg class="icon"><use href="#i-crown"></use></svg>
+                <span>Exporta&ccedil;&atilde;o de dados<small data-premium-summary="data-export">CSV + JSON prontos</small></span>
+              </button>
+            </section>
+          </section>
+
+          <section class="screen" id="settings" aria-labelledby="settings-title">
+            <header class="screen-header center-header">
+              <span></span>
+              <h2 id="settings-title">Ajustes</h2>
+              <span></span>
+            </header>
+
+            <article class="level-card">
+              <div>
+                <strong>N&iacute;vel 7</strong>
+                <div class="xp-bar"><i></i></div>
+                <span>850 / 1200 XP</span>
+              </div>
+              <img src="imagem/imagem/imagem 02.png" alt="Mascote do nivel">
+            </article>
+
+            <section class="stats-grid" aria-label="Gamificacao">
+              <article>
+                <img src="imagem/imagem/7 dias seguido.png" alt="">
+                <strong>12</strong>
+                <span>Sequ&ecirc;ncia</span>
+              </article>
+              <article>
+                <svg class="icon"><use href="#i-star"></use></svg>
+                <strong>850</strong>
+                <span>XP</span>
+              </article>
+              <article>
+                <img src="imagem/imagem/mestra do auto conhecimento.png" alt="">
+                <strong>5</strong>
+                <span>Conquistas</span>
+              </article>
+            </section>
+
+            <section class="settings-list" aria-label="Configuracoes">
+              <p class="section-label">Configura&ccedil;&otilde;es</p>
+              <button type="button" data-settings-panel="profile"><span>Perfil</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
+              <button type="button" data-settings-panel="cycle"><span>Prefer&ecirc;ncias do ciclo</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
+              <button type="button" data-settings-panel="reminders"><span>Lembretes</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
+              <button type="button" data-settings-panel="goals"><span>Meta de sintomas</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
+            </section>
+
+            <section class="settings-list account-list" aria-label="Conta">
+              <p class="section-label">Conta</p>
+              <button type="button" data-settings-panel="premium"><span>Plano Premium</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
+              <button type="button" data-settings-panel="backup"><span>Backup e dados</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
+              <button type="button" data-settings-panel="privacy"><span>Privacidade e seguran&ccedil;a</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
+              <button type="button" data-settings-panel="support"><span>Ajuda e suporte</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
+            </section>
+
+            <section class="achievement-strip settings-achievements" aria-label="Conquistas">
+              <button type="button" data-toast="Conquista: Fase L&uacute;tea Completa">
+                <img src="imagem/imagem/fase luteo completa.png" alt="Fase lutea completa">
+              </button>
+              <button type="button" data-toast="Conquista: Padr&otilde;es Descobertos">
+                <img src="imagem/imagem/padroes descoberto.png" alt="Padroes descobertos">
+              </button>
+              <button type="button" data-toast="Conquista: Mestre do Autoconhecimento">
+                <img src="imagem/imagem/mestra do auto conhecimento.png" alt="Mestre do autoconhecimento">
+              </button>
+            </section>
+          </section>
+        </div>
+
+        <input class="avatar-input" type="file" accept="image/*" data-avatar-input aria-label="Escolher foto do perfil">
+
+        <nav class="bottom-nav" aria-label="Navegacao principal">
+          <button class="active" type="button" data-target="home">
+            <svg class="icon"><use href="#i-home"></use></svg>
+            <span>In&iacute;cio</span>
+          </button>
+          <button type="button" data-target="register">
+            <svg class="icon"><use href="#i-drop"></use></svg>
+            <span>Registrar</span>
+          </button>
+          <button type="button" data-target="history">
+            <svg class="icon"><use href="#i-chart"></use></svg>
+            <span>Hist&oacute;rico</span>
+          </button>
+          <button type="button" data-target="insights">
+            <svg class="icon"><use href="#i-insight"></use></svg>
+            <span>Insights</span>
+          </button>
+          <button type="button" data-target="settings">
+            <svg class="icon"><use href="#i-user"></use></svg>
+            <span>Perfil</span>
+          </button>
+        </nav>
+
+        <div class="settings-sheet" aria-hidden="true">
+          <button class="settings-backdrop" type="button" data-close-settings aria-label="Fechar"></button>
+          <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-panel-title">
+            <header class="settings-panel-header">
+              <button class="icon-button" type="button" data-close-settings aria-label="Voltar">
+                <svg class="icon"><use href="#i-arrow"></use></svg>
+              </button>
+              <h2 id="settings-panel-title">Perfil</h2>
+              <button class="icon-button" type="button" data-close-settings aria-label="Fechar">
+                <span class="x-icon"></span>
+              </button>
+            </header>
+            <div class="settings-panel-content"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

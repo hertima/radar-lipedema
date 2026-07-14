@@ -1,0 +1,31 @@
+services:
+  app:
+    build: .
+    container_name: radar-lipedema-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: radar-lipedema-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-radar_lipedema}
+      POSTGRES_USER: ${POSTGRES_USER:-radar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-troque_essa_senha}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-radar} -d ${POSTGRES_DB:-radar_lipedema}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

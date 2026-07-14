@@ -1,0 +1,8 @@
+.git
+.agents
+node_modules
+npm-debug.log
+.env
+imagem/imagem/radar-lipedema-dados.csv
+imagem/imagem/radar-lipedema-dados.json
+imagem/imagem/radar-lipedema-relatorio*.pdf
