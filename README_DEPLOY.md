@@ -45,7 +45,13 @@ Troque principalmente:
 ```env
 POSTGRES_PASSWORD=uma_senha_bem_forte
 PGPASSWORD=uma_senha_bem_forte
-APP_PORT=3000
+APP_PORT=3001
+```
+
+Nesta VPS, a porta `3000` já está sendo usada pelo Easypanel. Para subir direto por Docker Compose, mantenha:
+
+```env
+APP_PORT=3001
 ```
 
 ## 4. Subir app e banco
@@ -71,8 +77,8 @@ docker compose logs -f app
 Testar no navegador:
 
 ```text
-http://IP_DA_VPS:3000
-http://IP_DA_VPS:3000/api/health
+http://IP_DA_VPS:3001
+http://IP_DA_VPS:3001/api/health
 ```
 
 ## 5. Domínio e HTTPS
