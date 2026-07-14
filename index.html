@@ -131,20 +131,20 @@
             <p class="screen-copy">Entenda os padr&otilde;es do seu corpo e tome melhores decis&otilde;es.</p>
 
             <div class="login-actions">
-              <button class="primary-button" type="button" data-start-app>Criar conta</button>
+              <button class="primary-button" type="button" data-auth-action="register">Criar conta</button>
             </div>
 
             <label class="field-label">
               <span>E-mail</span>
-              <input type="email" placeholder="ana@email.com">
+              <input type="email" placeholder="ana@email.com" data-login-email autocomplete="email">
             </label>
             <label class="field-label">
               <span>Senha</span>
-              <input type="password" placeholder="********">
+              <input type="password" placeholder="********" data-login-password autocomplete="current-password">
             </label>
 
-            <button class="text-button" type="button" data-toast="Link de recupera&ccedil;&atilde;o enviado">Esqueci minha senha</button>
-            <p class="login-footer">J&aacute; tem uma conta? <button type="button" data-start-app>Entrar</button></p>
+            <button class="text-button" type="button" data-auth-action="forgot">Esqueci minha senha</button>
+            <p class="login-footer">J&aacute; tem uma conta? <button type="button" data-auth-action="login">Entrar</button></p>
           </section>
 
           <section class="screen" id="home" aria-labelledby="home-title">
@@ -580,6 +580,7 @@
               <button type="button" data-settings-panel="backup"><span>Backup e dados</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
               <button type="button" data-settings-panel="privacy"><span>Privacidade e seguran&ccedil;a</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
               <button type="button" data-settings-panel="support"><span>Ajuda e suporte</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
+              <button type="button" data-auth-action="logout"><span>Sair da conta</span><svg class="icon"><use href="#i-arrow"></use></svg></button>
             </section>
 
             <section class="achievement-strip settings-achievements" aria-label="Conquistas">

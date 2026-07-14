@@ -194,11 +194,13 @@ async function apiRequest(path, options = {}) {
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
 
+    const data = await response.json().catch(() => null);
+
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      return data || { ok: false, error: `HTTP ${response.status}` };
     }
 
-    return response.json();
+    return data;
   } catch (error) {
     console.warn("API indispon\u00edvel:", error.message);
     return null;
@@ -256,7 +258,7 @@ function savePhotoToServer(slot, imageDataUrl) {
 
 async function loadServerState() {
   const data = await apiRequest("/api/bootstrap");
-  if (!data) {
+  if (!data || data.ok === false) {
     return;
   }
 
@@ -1405,12 +1407,90 @@ document.querySelectorAll("[data-target][tabindex]").forEach((item) => {
   });
 });
 
-document.querySelectorAll("[data-start-app]").forEach((button) => {
-  button.addEventListener("click", () => {
+async function handleAuthAction(actionName) {
+  const emailInput = document.querySelector("[data-login-email]");
+  const passwordInput = document.querySelector("[data-login-password]");
+  const email = emailInput?.value.trim() || "";
+  const password = passwordInput?.value || "";
+
+  if (actionName === "register" || actionName === "login") {
+    if (!email || !password) {
+      showToast("Preencha e-mail e senha");
+      return;
+    }
+
+    const result = await apiRequest(`/api/auth/${actionName}`, {
+      method: "POST",
+      body: { email, password },
+    });
+
+    if (!result || result.ok === false) {
+      showToast(result?.error || "Não foi possível continuar. Tente de novo.");
+      return;
+    }
+
+    if (passwordInput) {
+      passwordInput.value = "";
+    }
+
+    await loadServerState();
     showScreen("home");
-    showToast("Bem-vinda ao Radar Lipedema");
+    showToast(actionName === "register" ? "Conta criada! Bem-vinda ao Radar Lipedema" : "Bem-vinda de volta");
+    return;
+  }
+
+  if (actionName === "forgot") {
+    if (!email) {
+      showToast("Digite seu e-mail para recuperar a senha");
+      return;
+    }
+
+    const result = await apiRequest("/api/auth/forgot-password", {
+      method: "POST",
+      body: { email },
+    });
+    showToast(result?.message || result?.error || "Não foi possível enviar a recuperação agora.");
+    return;
+  }
+
+  if (actionName === "logout") {
+    await apiRequest("/api/auth/logout", { method: "POST" });
+    closeSettingsPanel();
+    showScreen("login");
+    showToast("Você saiu da conta");
+  }
+}
+
+document.querySelectorAll("[data-auth-action]").forEach((button) => {
+  button.addEventListener("click", () => {
+    handleAuthAction(button.dataset.authAction);
   });
 });
+
+async function handlePasswordResetFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("resetToken");
+  if (!token) {
+    return;
+  }
+
+  window.history.replaceState({}, "", window.location.pathname);
+  const password = window.prompt("Digite sua nova senha (mínimo 6 caracteres):");
+  if (!password) {
+    return;
+  }
+
+  const result = await apiRequest("/api/auth/reset-password", {
+    method: "POST",
+    body: { token, password },
+  });
+
+  showToast(
+    result?.ok
+      ? "Senha atualizada! Faça login com a nova senha."
+      : result?.error || "Não foi possível redefinir a senha."
+  );
+}
 
 document.addEventListener("click", (event) => {
   if (event.target.closest("[data-avatar-trigger]")) {
@@ -1804,8 +1884,19 @@ document.querySelectorAll("[data-save-register]").forEach((button) => {
   });
 });
 
+async function bootApp() {
+  await handlePasswordResetFromUrl();
+  const me = await apiRequest("/api/auth/me");
+
+  if (me?.authenticated) {
+    await loadServerState();
+    showScreen("home");
+  } else {
+    showScreen("login");
+  }
+}
+
 updateEvolutionScore();
 updatePremiumSummaries();
 setProfilePhoto(profilePhoto);
-loadServerState();
-showScreen("login");
+bootApp();
