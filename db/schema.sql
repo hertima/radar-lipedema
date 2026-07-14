@@ -4,8 +4,23 @@ create table if not exists users (
   id uuid primary key default gen_random_uuid(),
   email text unique not null,
   password_hash text not null,
+  email_verified boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+create table if not exists email_verification_codes (
+  id bigserial primary key,
+  user_id uuid not null references users(id) on delete cascade,
+  code_hash text not null,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists email_verification_codes_user_idx
+  on email_verification_codes(user_id);
+
+alter table users add column if not exists email_verified boolean not null default false;
 
 create table if not exists profiles (
   id uuid primary key references users(id) on delete cascade,

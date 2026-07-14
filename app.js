@@ -1405,6 +1405,62 @@ document.querySelectorAll("[data-target][tabindex]").forEach((item) => {
   });
 });
 
+function renderEmailVerificationPanel(email) {
+  settingsPanelTitle.textContent = "Confirme seu e-mail";
+  settingsPanelContent.innerHTML = `
+    <div class="settings-form">
+      <article class="settings-mini-card">
+        <strong>Enviamos um código</strong>
+        <p>Digite o código de 6 dígitos que enviamos para <b>${email}</b> para confirmar sua conta.</p>
+      </article>
+      <label class="settings-field">
+        <span>Código de verificação</span>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" data-verify-code-input autocomplete="one-time-code">
+      </label>
+      <div class="settings-action-row">
+        <button class="panel-button" type="button" data-verify-action="confirm" data-verify-email="${email}">Confirmar código</button>
+        <button class="panel-button secondary" type="button" data-verify-action="resend" data-verify-email="${email}">Reenviar código</button>
+      </div>
+    </div>
+  `;
+  settingsSheet.classList.add("open");
+  settingsSheet.setAttribute("aria-hidden", "false");
+  settingsPanelContent.querySelector("[data-verify-code-input]")?.focus();
+}
+
+async function handleVerifyAction(action, email) {
+  if (action === "resend") {
+    const result = await apiRequest("/api/auth/resend-code", { method: "POST", body: { email } });
+    showToast(result?.message || "Código reenviado");
+    return;
+  }
+
+  if (action === "confirm") {
+    const codeInput = settingsPanelContent.querySelector("[data-verify-code-input]");
+    const code = codeInput?.value.trim() || "";
+
+    if (code.length !== 6) {
+      showToast("Digite o código de 6 dígitos");
+      return;
+    }
+
+    const result = await apiRequest("/api/auth/verify-email", {
+      method: "POST",
+      body: { email, code },
+    });
+
+    if (!result || result.ok === false) {
+      showToast(result?.error || "Código inválido ou expirado.");
+      return;
+    }
+
+    closeSettingsPanel();
+    await loadServerState();
+    showScreen("home");
+    showToast("Conta verificada! Bem-vinda ao Radar Lipedema");
+  }
+}
+
 async function handleAuthAction(actionName) {
   const emailInput = document.querySelector("[data-login-email]");
   const passwordInput = document.querySelector("[data-login-password]");
@@ -1431,9 +1487,15 @@ async function handleAuthAction(actionName) {
       passwordInput.value = "";
     }
 
+    if (result.pendingVerification) {
+      renderEmailVerificationPanel(result.email);
+      showToast("Enviamos um código para o seu e-mail");
+      return;
+    }
+
     await loadServerState();
     showScreen("home");
-    showToast(actionName === "register" ? "Conta criada! Bem-vinda ao Radar Lipedema" : "Bem-vinda de volta");
+    showToast("Bem-vinda de volta");
     return;
   }
 
@@ -1668,6 +1730,12 @@ settingsPanelContent.addEventListener("submit", (event) => {
 });
 
 settingsPanelContent.addEventListener("click", (event) => {
+  const verifyAction = event.target.closest("[data-verify-action]");
+  if (verifyAction) {
+    handleVerifyAction(verifyAction.dataset.verifyAction, verifyAction.dataset.verifyEmail);
+    return;
+  }
+
   const cameraAction = event.target.closest("[data-camera-action]");
   if (cameraAction) {
     const actionName = cameraAction.dataset.cameraAction;

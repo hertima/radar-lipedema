@@ -16,6 +16,7 @@ const jwtSecret = process.env.JWT_SECRET || "dev-only-insecure-secret-troque-iss
 const sessionCookieName = "session";
 const sessionMaxAgeMs = 30 * 24 * 60 * 60 * 1000;
 const resetTokenTtlMs = 30 * 60 * 1000;
+const verificationCodeTtlMs = 10 * 60 * 1000;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -126,6 +127,37 @@ async function sendResetEmail(email, resetUrl) {
   });
 }
 
+function generateVerificationCode() {
+  return String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
+}
+
+async function sendVerificationCode(email, code) {
+  if (!mailTransport) {
+    console.log(`[verify-email] código para ${email}: ${code}`);
+    return;
+  }
+
+  await mailTransport.sendMail({
+    from: process.env.MAIL_FROM || "Radar Lipedema <no-reply@radarlipedema.app>",
+    to: email,
+    subject: `${code} é o seu código do Radar Lipedema`,
+    html: `<p>Seu código de verificação é:</p><p style="font-size:28px;font-weight:700;letter-spacing:4px;">${code}</p><p>Ele expira em 10 minutos. Se não foi você, ignore este e-mail.</p>`,
+  });
+}
+
+async function issueVerificationCode(userId, email) {
+  const code = generateVerificationCode();
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+  const expiresAt = new Date(Date.now() + verificationCodeTtlMs);
+
+  await pool.query(
+    "insert into email_verification_codes (user_id, code_hash, expires_at) values ($1, $2, $3)",
+    [userId, codeHash, expiresAt]
+  );
+
+  await sendVerificationCode(email, code);
+}
+
 async function latestPhotos(profileId) {
   const result = await pool.query(
     `select distinct on (slot) slot, image_data_url as "imageDataUrl", notes, created_at as "createdAt"
@@ -153,28 +185,91 @@ app.post("/api/auth/register", asyncRoute(async (request, response) => {
     return;
   }
 
-  const existing = await pool.query("select id from users where email = $1", [email]);
-  if (existing.rows.length) {
+  const existing = await pool.query("select id, email_verified as \"emailVerified\" from users where email = $1", [email]);
+  const existingUser = existing.rows[0];
+
+  if (existingUser?.emailVerified) {
     response.status(409).json({ ok: false, error: "Já existe uma conta com esse e-mail." });
     return;
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const userResult = await pool.query(
-    "insert into users (email, password_hash) values ($1, $2) returning id",
-    [email, passwordHash]
+  let userId;
+
+  if (existingUser) {
+    userId = existingUser.id;
+    await pool.query("update users set password_hash = $1 where id = $2", [passwordHash, userId]);
+  } else {
+    const userResult = await pool.query(
+      "insert into users (email, password_hash) values ($1, $2) returning id",
+      [email, passwordHash]
+    );
+    userId = userResult.rows[0].id;
+
+    await pool.query(
+      `insert into profiles (id, name, email, goal)
+       values ($1, $2, $3, $4)`,
+      [userId, name, email, "Entender padrões do ciclo"]
+    );
+  }
+
+  await issueVerificationCode(userId, email);
+  response.status(201).json({ ok: true, pendingVerification: true, email });
+}));
+
+app.post("/api/auth/verify-email", asyncRoute(async (request, response) => {
+  const email = cleanText(request.body.email, "", 180).toLowerCase();
+  const code = cleanText(request.body.code, "", 6);
+
+  if (!/^\d{6}$/.test(code)) {
+    response.status(400).json({ ok: false, error: "Código inválido." });
+    return;
+  }
+
+  const userResult = await pool.query("select id from users where email = $1", [email]);
+  const user = userResult.rows[0];
+  if (!user) {
+    response.status(400).json({ ok: false, error: "Código inválido ou expirado." });
+    return;
+  }
+
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+  const codeResult = await pool.query(
+    `select id from email_verification_codes
+      where user_id = $1 and code_hash = $2 and used_at is null and expires_at > now()`,
+    [user.id, codeHash]
   );
-  const userId = userResult.rows[0].id;
+
+  if (!codeResult.rows.length) {
+    response.status(400).json({ ok: false, error: "Código inválido ou expirado." });
+    return;
+  }
+
+  await pool.query("update email_verification_codes set used_at = now() where id = $1", [codeResult.rows[0].id]);
+  await pool.query("update users set email_verified = true where id = $1", [user.id]);
 
   const profileResult = await pool.query(
-    `insert into profiles (id, name, email, goal)
-     values ($1, $2, $3, $4)
-     returning id, name, email, goal, photo_data_url as "photoDataUrl", updated_at as "updatedAt"`,
-    [userId, name, email, "Entender padrões do ciclo"]
+    `select id, name, email, goal, photo_data_url as "photoDataUrl", updated_at as "updatedAt"
+       from profiles where id = $1`,
+    [user.id]
   );
 
-  setSessionCookie(response, userId);
-  response.status(201).json({ ok: true, profile: profileResult.rows[0] });
+  setSessionCookie(response, user.id);
+  response.json({ ok: true, profile: profileResult.rows[0] });
+}));
+
+app.post("/api/auth/resend-code", asyncRoute(async (request, response) => {
+  const email = cleanText(request.body.email, "", 180).toLowerCase();
+  const userResult = await pool.query(
+    "select id from users where email = $1 and email_verified = false",
+    [email]
+  );
+
+  if (userResult.rows.length) {
+    await issueVerificationCode(userResult.rows[0].id, email);
+  }
+
+  response.json({ ok: true, message: "Se houver um cadastro pendente para esse e-mail, reenviamos o código." });
 }));
 
 app.post("/api/auth/login", asyncRoute(async (request, response) => {
