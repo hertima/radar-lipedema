@@ -1708,21 +1708,31 @@ document.querySelectorAll("[data-target][tabindex]").forEach((item) => {
   });
 });
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function renderEmailVerificationPanel(email) {
+  const safeEmail = escapeHtml(email);
   settingsPanelTitle.textContent = "Confirme seu e-mail";
   settingsPanelContent.innerHTML = `
     <div class="settings-form">
       <article class="settings-mini-card">
         <strong>Enviamos um código</strong>
-        <p>Digite o código de 6 dígitos que enviamos para <b>${email}</b> para confirmar sua conta.</p>
+        <p>Digite o código de 6 dígitos que enviamos para <b>${safeEmail}</b> para confirmar sua conta.</p>
       </article>
       <label class="settings-field">
         <span>Código de verificação</span>
         <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" data-verify-code-input autocomplete="one-time-code">
       </label>
       <div class="settings-action-row">
-        <button class="panel-button" type="button" data-verify-action="confirm" data-verify-email="${email}">Confirmar código</button>
-        <button class="panel-button secondary" type="button" data-verify-action="resend" data-verify-email="${email}">Reenviar código</button>
+        <button class="panel-button" type="button" data-verify-action="confirm" data-verify-email="${safeEmail}">Confirmar código</button>
+        <button class="panel-button secondary" type="button" data-verify-action="resend" data-verify-email="${safeEmail}">Reenviar código</button>
       </div>
     </div>
   `;

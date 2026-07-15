@@ -9,6 +9,7 @@ const nodemailer = require("nodemailer");
 const { Pool } = require("pg");
 
 const app = express();
+app.set("trust proxy", 1);
 const port = Number(process.env.PORT || 3000);
 const publicDir = __dirname;
 const schemaPath = path.join(__dirname, "db", "schema.sql");
@@ -50,6 +51,43 @@ function cleanText(value, fallback = "", max = 500) {
 
   return value.trim().slice(0, max);
 }
+
+const emailPattern = /^[^\s@"'<>]+@[^\s@"'<>]+\.[^\s@"'<>]+$/;
+
+function isValidEmail(value) {
+  return typeof value === "string" && value.length <= 180 && emailPattern.test(value);
+}
+
+const rateLimitHits = new Map();
+
+function rateLimit(name, max, windowMs) {
+  return (request, response, next) => {
+    const key = `${name}:${request.ip}`;
+    const now = Date.now();
+    const hits = (rateLimitHits.get(key) || []).filter((timestamp) => now - timestamp < windowMs);
+
+    if (hits.length >= max) {
+      response.status(429).json({ ok: false, error: "Muitas tentativas. Aguarde um pouco e tente de novo." });
+      return;
+    }
+
+    hits.push(now);
+    rateLimitHits.set(key, hits);
+    next();
+  };
+}
+
+setInterval(() => {
+  const now = Date.now();
+  rateLimitHits.forEach((hits, key) => {
+    const fresh = hits.filter((timestamp) => now - timestamp < 60 * 60 * 1000);
+    if (fresh.length) {
+      rateLimitHits.set(key, fresh);
+    } else {
+      rateLimitHits.delete(key);
+    }
+  });
+}, 15 * 60 * 1000).unref();
 
 function cleanPayload(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -175,12 +213,12 @@ app.get("/api/health", asyncRoute(async (_request, response) => {
   response.json({ ok: true, app: "Radar Lipedema", databaseTime: db.rows[0].now });
 }));
 
-app.post("/api/auth/register", asyncRoute(async (request, response) => {
+app.post("/api/auth/register", rateLimit("register", 10, 15 * 60 * 1000), asyncRoute(async (request, response) => {
   const email = cleanText(request.body.email, "", 180).toLowerCase();
   const password = String(request.body.password || "");
   const name = cleanText(request.body.name, "", 120) || email.split("@")[0] || "Usuária";
 
-  if (!email.includes("@") || password.length < 6) {
+  if (!isValidEmail(email) || password.length < 6) {
     response.status(400).json({ ok: false, error: "Informe um e-mail válido e uma senha com pelo menos 6 caracteres." });
     return;
   }
@@ -217,7 +255,7 @@ app.post("/api/auth/register", asyncRoute(async (request, response) => {
   response.status(201).json({ ok: true, pendingVerification: true, email });
 }));
 
-app.post("/api/auth/verify-email", asyncRoute(async (request, response) => {
+app.post("/api/auth/verify-email", rateLimit("verify-email", 10, 10 * 60 * 1000), asyncRoute(async (request, response) => {
   const email = cleanText(request.body.email, "", 180).toLowerCase();
   const code = cleanText(request.body.code, "", 6);
 
@@ -258,7 +296,7 @@ app.post("/api/auth/verify-email", asyncRoute(async (request, response) => {
   response.json({ ok: true, profile: profileResult.rows[0] });
 }));
 
-app.post("/api/auth/resend-code", asyncRoute(async (request, response) => {
+app.post("/api/auth/resend-code", rateLimit("resend-code", 5, 15 * 60 * 1000), asyncRoute(async (request, response) => {
   const email = cleanText(request.body.email, "", 180).toLowerCase();
   const userResult = await pool.query(
     "select id from users where email = $1 and email_verified = false",
@@ -272,7 +310,7 @@ app.post("/api/auth/resend-code", asyncRoute(async (request, response) => {
   response.json({ ok: true, message: "Se houver um cadastro pendente para esse e-mail, reenviamos o código." });
 }));
 
-app.post("/api/auth/login", asyncRoute(async (request, response) => {
+app.post("/api/auth/login", rateLimit("login", 10, 15 * 60 * 1000), asyncRoute(async (request, response) => {
   const email = cleanText(request.body.email, "", 180).toLowerCase();
   const password = String(request.body.password || "");
 
@@ -316,7 +354,7 @@ app.get("/api/auth/me", asyncRoute(async (request, response) => {
   response.json({ ok: true, authenticated: true, profile: result.rows[0] });
 }));
 
-app.post("/api/auth/forgot-password", asyncRoute(async (request, response) => {
+app.post("/api/auth/forgot-password", rateLimit("forgot-password", 5, 15 * 60 * 1000), asyncRoute(async (request, response) => {
   const email = cleanText(request.body.email, "", 180).toLowerCase();
   const result = await pool.query("select id from users where email = $1", [email]);
   const user = result.rows[0];
@@ -339,7 +377,7 @@ app.post("/api/auth/forgot-password", asyncRoute(async (request, response) => {
   response.json({ ok: true, message: "Se esse e-mail existir, enviamos um link de recuperação." });
 }));
 
-app.post("/api/auth/reset-password", asyncRoute(async (request, response) => {
+app.post("/api/auth/reset-password", rateLimit("reset-password", 10, 15 * 60 * 1000), asyncRoute(async (request, response) => {
   const token = String(request.body.token || "");
   const password = String(request.body.password || "");
 
