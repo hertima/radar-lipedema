@@ -173,8 +173,8 @@ a {
 
 .lp-hero {
   position: relative;
-  background: var(--stage);
-  color: #f4eefc;
+  background: var(--soft);
+  color: var(--ink);
   overflow: hidden;
   padding: 56px 0 0;
 }
@@ -182,10 +182,10 @@ a {
 .lp-hero::before {
   content: "";
   position: absolute;
-  inset: -20% -10% auto -10%;
+  inset: -30% -10% auto -10%;
   height: 640px;
-  background: radial-gradient(circle at 30% 20%, rgba(244, 63, 130, 0.35), transparent 60%),
-    radial-gradient(circle at 75% 10%, rgba(110, 52, 216, 0.4), transparent 55%);
+  background: radial-gradient(circle at 30% 20%, rgba(244, 63, 130, 0.14), transparent 60%),
+    radial-gradient(circle at 75% 10%, rgba(110, 52, 216, 0.16), transparent 55%);
   pointer-events: none;
 }
 
@@ -208,7 +208,7 @@ a {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #f4b8d1;
+  color: var(--pink);
   margin-bottom: 18px;
 }
 
@@ -223,14 +223,14 @@ a {
 .lp-hero h1 {
   font-size: clamp(30px, 4.6vw, 48px);
   line-height: 1.12;
-  color: #fff;
+  color: var(--ink);
   max-width: 14ch;
   margin-bottom: 20px;
 }
 
 .lp-hero-copy p {
   font-size: 17px;
-  color: #cabfdc;
+  color: var(--muted);
   margin: 0 0 28px;
   max-width: 46ch;
 }
@@ -254,17 +254,57 @@ a {
   position: relative;
   justify-self: center;
   width: 100%;
-  max-width: 380px;
+  max-width: 340px;
 }
 
-.lp-hero-art img {
+.lp-hero-frame {
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 30px 60px rgba(64, 20, 143, 0.25);
+}
+
+.lp-hero-frame img {
   width: 100%;
-  filter: drop-shadow(0 40px 60px rgba(0, 0, 0, 0.55));
+  display: block;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .lp-hero-art img {
+  .lp-hero-frame {
     animation: float 6s ease-in-out infinite;
+  }
+}
+
+.lp-floating-badge {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 12px 24px rgba(64, 20, 143, 0.3);
+  border: 3px solid var(--paper);
+}
+
+.lp-floating-badge-1 {
+  top: -22px;
+  left: -30px;
+  transform: rotate(-8deg);
+}
+
+.lp-floating-badge-2 {
+  bottom: 40px;
+  right: -26px;
+  transform: rotate(6deg);
+  width: 68px;
+  height: 68px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-floating-badge-1 {
+    animation: float 5s ease-in-out infinite;
+  }
+
+  .lp-floating-badge-2 {
+    animation: float 7s ease-in-out infinite reverse;
   }
 }
 
@@ -680,7 +720,7 @@ a {
 .lp-final-cta {
   text-align: center;
   padding: 96px 24px;
-  background: var(--stage);
+  background: var(--purple-deep);
   color: #fff;
   position: relative;
   overflow: hidden;
@@ -690,7 +730,7 @@ a {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(244, 63, 130, 0.28), transparent 60%);
+  background: radial-gradient(circle at 50% 0%, rgba(244, 63, 130, 0.35), transparent 60%);
   pointer-events: none;
 }
 
