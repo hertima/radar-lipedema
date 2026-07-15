@@ -366,7 +366,8 @@ a {
 .lp-checklist-list li {
   position: relative;
   padding-left: 32px;
-  font-size: 16px;
+  font-size: clamp(17px, 4.4vw, 20px);
+  line-height: 1.4;
   color: #fff;
 }
 
@@ -384,7 +385,7 @@ a {
 .lp-checklist-foot {
   color: rgba(255, 255, 255, 0.75);
   font-weight: 600;
-  font-size: 15px;
+  font-size: clamp(15px, 3.8vw, 17px);
 }
 
 .lp-problem-foot {
