@@ -39,6 +39,46 @@ if (process.env.SMTP_HOST) {
   });
 }
 
+const metaPixelId = process.env.META_PIXEL_ID || "";
+const metaCapiAccessToken = process.env.META_CAPI_ACCESS_TOKEN || "";
+
+function sha256Hex(value) {
+  return crypto.createHash("sha256").update(value.trim().toLowerCase()).digest("hex");
+}
+
+async function sendMetaConversionEvent(eventName, request, { email } = {}) {
+  if (!metaPixelId || !metaCapiAccessToken) {
+    return;
+  }
+
+  const clientIp = request.headers["x-forwarded-for"]?.split(",")[0]?.trim() || request.socket.remoteAddress;
+  const payload = {
+    data: [
+      {
+        event_name: eventName,
+        event_time: Math.floor(Date.now() / 1000),
+        action_source: "website",
+        event_source_url: `https://${request.hostname}${request.originalUrl}`,
+        user_data: {
+          client_ip_address: clientIp,
+          client_user_agent: request.headers["user-agent"] || "",
+          ...(email ? { em: [sha256Hex(email)] } : {}),
+        },
+      },
+    ],
+  };
+
+  try {
+    await fetch(`https://graph.facebook.com/v19.0/${metaPixelId}/events?access_token=${metaCapiAccessToken}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.warn("Falha ao enviar evento para Meta Conversions API:", error.message);
+  }
+}
+
 app.disable("x-powered-by");
 app.use(cookieParser());
 app.use(express.json({ limit: "30mb" }));
@@ -285,6 +325,8 @@ app.post("/api/auth/verify-email", rateLimit("verify-email", 10, 10 * 60 * 1000)
 
   await pool.query("update email_verification_codes set used_at = now() where id = $1", [codeResult.rows[0].id]);
   await pool.query("update users set email_verified = true where id = $1", [user.id]);
+
+  sendMetaConversionEvent("CompleteRegistration", request, { email });
 
   const profileResult = await pool.query(
     `select id, name, email, goal, photo_data_url as "photoDataUrl",
@@ -614,6 +656,16 @@ app.get("/api/photos/latest", requireAuth, asyncRoute(async (request, response) 
   response.json({ ok: true, photos: await latestPhotos(request.userId) });
 }));
 
+const marketingHosts = new Set(["radarlipedema.com.br", "www.radarlipedema.com.br"]);
+
+function isMarketingHost(request) {
+  return marketingHosts.has(request.hostname);
+}
+
+app.get("/", (request, response) => {
+  response.sendFile(path.join(publicDir, isMarketingHost(request) ? "landing.html" : "index.html"));
+});
+
 app.use(express.static(publicDir, {
   extensions: ["html"],
   setHeaders(response, filePath) {
@@ -623,8 +675,8 @@ app.use(express.static(publicDir, {
   },
 }));
 
-app.get("*", (_request, response) => {
-  response.sendFile(path.join(publicDir, "index.html"));
+app.get("*", (request, response) => {
+  response.sendFile(path.join(publicDir, isMarketingHost(request) ? "landing.html" : "index.html"));
 });
 
 app.use((error, _request, response, _next) => {
