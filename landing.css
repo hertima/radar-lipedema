@@ -183,7 +183,7 @@ a {
   padding: 12px 24px 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  gap: 12px;
   align-items: start;
 }
 
@@ -201,7 +201,7 @@ a {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #ffd1e4;
-  margin-bottom: 18px;
+  margin-bottom: 10px;
 }
 
 .lp-eyebrow::before {
@@ -224,7 +224,7 @@ a {
   font-size: clamp(19px, 5vw, 21px);
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.88);
-  margin: 0 0 28px;
+  margin: 0 0 18px;
   max-width: 46ch;
 }
 
@@ -340,7 +340,7 @@ a {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: #ffd1e4;
-  margin-bottom: 18px;
+  margin-bottom: 10px;
   display: block;
 }
 
@@ -399,7 +399,7 @@ a {
 }
 
 .lp-problem-foot {
-  margin-top: 18px;
+  margin-top: 12px;
   color: rgba(255, 255, 255, 0.85);
   font-size: 18px;
   line-height: 1.55;
@@ -413,7 +413,7 @@ a {
 
 .lp-section-head {
   max-width: 640px;
-  margin: 0 0 28px;
+  margin: 0 0 18px;
 }
 
 .lp-section-head span {
@@ -492,7 +492,7 @@ a {
 .lp-how-steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 28px;
+  gap: 20px;
   position: relative;
 }
 
@@ -530,7 +530,7 @@ a {
   font-family: "Fraunces", serif;
   font-weight: 600;
   font-size: 20px;
-  margin-bottom: 18px;
+  margin-bottom: 10px;
   position: relative;
   z-index: 1;
 }
@@ -688,7 +688,7 @@ a {
 
 .lp-mission .wrap {
   display: grid;
-  gap: 24px;
+  gap: 16px;
   align-items: center;
   max-width: 960px;
 }
@@ -799,7 +799,7 @@ a {
   position: relative;
   color: #e6dcf5;
   font-size: 18px;
-  margin: 0 auto 28px;
+  margin: 0 auto 18px;
 }
 
 .lp-final-cta .lp-cta-primary {
