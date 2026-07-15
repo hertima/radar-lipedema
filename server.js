@@ -253,6 +253,11 @@ app.get("/api/health", asyncRoute(async (_request, response) => {
   response.json({ ok: true, app: "Radar Lipedema", databaseTime: db.rows[0].now });
 }));
 
+app.get("/api/stats/public", asyncRoute(async (_request, response) => {
+  const result = await pool.query("select count(*)::int as count from users where email_verified = true");
+  response.json({ ok: true, verifiedUsers: result.rows[0].count });
+}));
+
 app.post("/api/auth/register", rateLimit("register", 10, 15 * 60 * 1000), asyncRoute(async (request, response) => {
   const email = cleanText(request.body.email, "", 180).toLowerCase();
   const password = String(request.body.password || "");

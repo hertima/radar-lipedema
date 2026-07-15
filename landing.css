@@ -739,6 +739,13 @@ a {
 .lp-price-heading {
   font-size: clamp(24px, 5.5vw, 30px);
   color: #fff;
+  margin-bottom: 8px;
+}
+
+.lp-price-stat {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffd1e4;
   margin-bottom: 24px;
 }
 
@@ -842,6 +849,40 @@ a {
 
 .lp-price-plan-highlight .lp-cta-primary {
   background: var(--purple-deep);
+}
+
+/* ---------- Testimonials ---------- */
+
+.lp-testimonials {
+  padding: 32px 0;
+}
+
+.lp-testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.lp-testimonial-card {
+  background: var(--paper);
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.lp-testimonial-quote {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink);
+  font-style: italic;
+  margin: 0 0 12px;
+}
+
+.lp-testimonial-name {
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--purple);
+  margin: 0;
 }
 
 /* ---------- Mission (honesty section) ---------- */

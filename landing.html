@@ -146,6 +146,7 @@
         <div class="wrap">
           <span class="lp-price-badge">Preço de lançamento</span>
           <h2 class="lp-price-heading">Escolha seu plano</h2>
+          <p class="lp-price-stat" id="user-count-stat" hidden></p>
           <div class="lp-price-plans">
             <article class="lp-price-plan">
               <span class="lp-price-plan-name">Mensal</span>
@@ -278,7 +279,27 @@
           </div>
           <div>
             <h2>Seus dados são seus</h2>
-            <p>O Radar Lipedema está em fase de lançamento: preferimos ser honestas sobre isso a inventar números ou depoimentos que não existem ainda. O que existe de verdade: seus registros ficam salvos com segurança, você pode exportar seus dados a qualquer momento e apagar sua conta e tudo relacionado a ela quando quiser, direto pelo app.</p>
+            <p>O Radar Lipedema está em fase de lançamento: preferimos ser honestas sobre isso a inventar números que não existem. O que existe de verdade: seus registros ficam salvos com segurança, você pode exportar seus dados a qualquer momento e apagar sua conta e tudo relacionado a ela quando quiser, direto pelo app.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="lp-testimonials" aria-label="Depoimentos">
+        <div class="wrap">
+          <span class="lp-problem-label">Quem já testou</span>
+          <div class="lp-testimonial-grid">
+            <article class="lp-testimonial-card">
+              <p class="lp-testimonial-quote">"Ficou muito bom! Vai ajudar muito."</p>
+              <p class="lp-testimonial-name">Geovanna Guimarães</p>
+            </article>
+            <article class="lp-testimonial-card">
+              <p class="lp-testimonial-quote">"Ficou muito estruturado. Ajuda bastante a não perder o ciclo menstrual."</p>
+              <p class="lp-testimonial-name">Nayra</p>
+            </article>
+            <article class="lp-testimonial-card">
+              <p class="lp-testimonial-quote">"Acompanhando dia a dia, ajuda muito na questão do inchaço e nos insights."</p>
+              <p class="lp-testimonial-name">Divina Maria</p>
+            </article>
           </div>
         </div>
       </section>
@@ -351,6 +372,22 @@
           link.href += separator + query.slice(1);
         });
       }
+
+      // Contador real de cadastros, puxado direto do banco de dados (não é número inventado).
+      fetch("/api/stats/public")
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          var el = document.getElementById("user-count-stat");
+          if (!el || !data || typeof data.verifiedUsers !== "number") {
+            return;
+          }
+          var count = data.verifiedUsers;
+          el.textContent = count > 0
+            ? count + (count === 1 ? " pessoa já criou conta" : " pessoas já criaram conta")
+            : "Seja uma das primeiras a criar conta";
+          el.hidden = false;
+        })
+        .catch(function () {});
     </script>
   </body>
 </html>
