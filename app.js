@@ -1717,13 +1717,22 @@ const settingsPanels = {
     content: `
       <form class="settings-form" data-panel-form="change-password">
         <label class="settings-field">Senha atual
-          <input name="currentPassword" type="password" autocomplete="current-password" required minlength="6">
+          <span class="password-field-wrap">
+            <input name="currentPassword" type="password" autocomplete="current-password" required minlength="6">
+            <button type="button" class="password-toggle" data-password-toggle aria-label="Mostrar senha">Mostrar</button>
+          </span>
         </label>
         <label class="settings-field">Nova senha
-          <input name="newPassword" type="password" autocomplete="new-password" required minlength="6">
+          <span class="password-field-wrap">
+            <input name="newPassword" type="password" autocomplete="new-password" required minlength="6">
+            <button type="button" class="password-toggle" data-password-toggle aria-label="Mostrar senha">Mostrar</button>
+          </span>
         </label>
         <label class="settings-field">Confirmar nova senha
-          <input name="confirmPassword" type="password" autocomplete="new-password" required minlength="6">
+          <span class="password-field-wrap">
+            <input name="confirmPassword" type="password" autocomplete="new-password" required minlength="6">
+            <button type="button" class="password-toggle" data-password-toggle aria-label="Mostrar senha">Mostrar</button>
+          </span>
         </label>
         <button class="panel-button" type="submit">Salvar nova senha</button>
       </form>
@@ -1738,7 +1747,10 @@ const settingsPanels = {
           <p>Sua conta, registros, fotos e hist&oacute;rico ser&atilde;o apagados permanentemente do nosso banco de dados. N&atilde;o &eacute; poss&iacute;vel desfazer.</p>
         </article>
         <label class="settings-field">Digite sua senha para confirmar
-          <input data-delete-account-password type="password" autocomplete="current-password">
+          <span class="password-field-wrap">
+            <input data-delete-account-password type="password" autocomplete="current-password">
+            <button type="button" class="password-toggle" data-password-toggle aria-label="Mostrar senha">Mostrar</button>
+          </span>
         </label>
         <button class="panel-button danger" type="button" data-panel-action="confirm-delete-account">Apagar conta e todos os dados</button>
       </div>
@@ -2301,6 +2313,23 @@ document.querySelectorAll("[data-auth-action]").forEach((button) => {
   button.addEventListener("click", () => {
     handleAuthAction(button.dataset.authAction);
   });
+});
+
+document.addEventListener("click", (event) => {
+  const toggle = event.target.closest("[data-password-toggle]");
+  if (!toggle) {
+    return;
+  }
+
+  const input = toggle.previousElementSibling;
+  if (!input) {
+    return;
+  }
+
+  const showing = input.type === "text";
+  input.type = showing ? "password" : "text";
+  toggle.textContent = showing ? "Mostrar" : "Ocultar";
+  toggle.setAttribute("aria-label", showing ? "Mostrar senha" : "Ocultar senha");
 });
 
 async function handlePasswordResetFromUrl() {
