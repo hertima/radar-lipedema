@@ -331,6 +331,102 @@ function computeTreatmentAdherence() {
   };
 }
 
+function computeRoutineSuggestion() {
+  const recent = getDailyRegisters().slice(-7);
+  const avgDor = averageOf(recent, "dor");
+  const avgEdema = averageOf(recent, "edema");
+  const adherence = computeTreatmentAdherence();
+  const cycleInfo = computeCycleInfo(currentProfile);
+
+  const garmentLastReplacedAt = currentProfile?.garmentLastReplacedAt ? String(currentProfile.garmentLastReplacedAt).slice(0, 10) : null;
+  const daysSinceReplaced = garmentLastReplacedAt
+    ? Math.floor((Date.now() - new Date(`${garmentLastReplacedAt}T00:00:00`).getTime()) / 86_400_000)
+    : null;
+
+  const items = [];
+
+  items.push({ text: "Beber pelo menos 2 litros de &aacute;gua ao longo do dia", reason: "H&aacute;bito de base recomendado para quem tem lipedema." });
+  items.push({ text: "Elevar as pernas por 15 a 20 minutos em algum momento do dia", reason: "Favorece o retorno venoso e linf&aacute;tico." });
+
+  if (currentProfile?.garmentCompressionClass) {
+    if (adherence.avgGarmentHours !== null && adherence.avgGarmentHours < 8) {
+      items.push({
+        text: "Tentar usar a meia de compress&atilde;o por mais horas hoje",
+        reason: `M&eacute;dia registrada nos &uacute;ltimos dias: ${adherence.avgGarmentHours}h/dia.`,
+      });
+    } else {
+      items.push({
+        text: "Manter o uso da meia de compress&atilde;o durante o dia",
+        reason: adherence.avgGarmentHours !== null ? `Uso m&eacute;dio registrado: ${adherence.avgGarmentHours}h/dia.` : null,
+      });
+    }
+  } else {
+    items.push({ text: "Informar sua classe de compress&atilde;o em Ajustes para receber lembretes de uso da meia", reason: null });
+  }
+
+  if (daysSinceReplaced !== null && daysSinceReplaced >= 120) {
+    items.push({
+      text: "Considerar trocar a meia de compress&atilde;o",
+      reason: `J&aacute; se passaram ${daysSinceReplaced} dias desde a &uacute;ltima troca registrada.`,
+    });
+  }
+
+  if (adherence.totalEntries >= 3) {
+    if (adherence.drenagem !== null && adherence.drenagem < 40) {
+      items.push({
+        text: "Agendar ou realizar uma sess&atilde;o de drenagem linf&aacute;tica esta semana",
+        reason: `Presente em apenas ${adherence.drenagem}% dos seus &uacute;ltimos registros de tratamento.`,
+      });
+    }
+    if (adherence.fisioterapia !== null && adherence.fisioterapia < 40) {
+      items.push({
+        text: "Encaixar uma sess&atilde;o de fisioterapia",
+        reason: `Presente em apenas ${adherence.fisioterapia}% dos seus &uacute;ltimos registros de tratamento.`,
+      });
+    }
+    if (adherence.exercicio !== null && adherence.exercicio < 40) {
+      items.push({
+        text: "Fazer uma caminhada leve ou exerc&iacute;cio de baixo impacto",
+        reason: `Presente em apenas ${adherence.exercicio}% dos seus &uacute;ltimos registros de tratamento.`,
+      });
+    }
+  } else {
+    items.push({ text: "Registrar tratamentos (drenagem, fisioterapia, exerc&iacute;cio) para receber sugest&otilde;es mais precisas", reason: null });
+  }
+
+  if (avgDor !== null && avgDor >= 6) {
+    items.push({
+      text: "Priorizar repouso e evitar longos per&iacute;odos em p&eacute; hoje",
+      reason: `Sua dor m&eacute;dia nos &uacute;ltimos ${recent.length} registros est&aacute; em ${avgDor.toFixed(1)}/10.`,
+    });
+  }
+
+  if (avgEdema !== null && avgEdema >= 6) {
+    items.push({
+      text: "Reduzir o consumo de sal hoje e elevar as pernas com mais frequ&ecirc;ncia",
+      reason: `Seu edema m&eacute;dio recente est&aacute; em ${avgEdema.toFixed(1)}/10.`,
+    });
+  }
+
+  if (cycleInfo) {
+    if (cycleInfo.phase === "Lútea") {
+      items.push({
+        text: "Redobrar aten&ccedil;&atilde;o aos sintomas hoje",
+        reason: "Voc&ecirc; est&aacute; na fase l&uacute;tea do ciclo, quando sintomas de lipedema tendem a piorar.",
+      });
+    } else if (cycleInfo.phase === "Menstrual") {
+      items.push({
+        text: "Ir com calma em exerc&iacute;cios de maior impacto hoje",
+        reason: "Voc&ecirc; est&aacute; na fase menstrual do ciclo.",
+      });
+    }
+  } else {
+    items.push({ text: "Informar a data do seu &uacute;ltimo ciclo em Ajustes para cruzar sintomas com a fase hormonal", reason: null });
+  }
+
+  return { generatedAt: new Date().toLocaleString("pt-BR"), items };
+}
+
 function renderHomeSnapshot(latest) {
   const hasData = Boolean(latest);
   const values = hasData ? [latest.dor, latest.edema, latest.sensibilidade, latest.humor] : [];
@@ -2000,6 +2096,31 @@ const registerPanels = {
             <textarea placeholder="Ex.: drenagem com terapeuta X"></textarea>
           </label>
           <button class="panel-button" type="button" data-panel-action="save-treatments">Salvar tratamentos</button>
+        </div>
+      `;
+    },
+  },
+  routine: {
+    title: "Rotina do dia",
+    render() {
+      const suggestion = computeRoutineSuggestion();
+      const itemsHtml = suggestion.items
+        .map(
+          (item) => `
+            <label class="panel-row">
+              <span>${item.text}${item.reason ? `<small>${item.reason}</small>` : ""}</span>
+              <input type="checkbox">
+            </label>
+          `
+        )
+        .join("");
+      return `
+        <div class="smart-register-panel">
+          <p class="panel-question">Sugest&otilde;es geradas a partir dos seus pr&oacute;prios registros de sintomas, tratamentos e ciclo.</p>
+          <div class="panel-list checklist-panel">
+            ${itemsHtml}
+          </div>
+          <p class="settings-hint">Gerado em ${suggestion.generatedAt}. N&atilde;o substitui orienta&ccedil;&atilde;o m&eacute;dica &mdash; use como lembrete organizado do seu dia.</p>
         </div>
       `;
     },

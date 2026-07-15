@@ -1108,6 +1108,11 @@ input[type="range"] {
   background: #fff4df;
 }
 
+.register-item-icon.routine {
+  color: #19a79f;
+  background: #e5fbf8;
+}
+
 .pain-register-panel,
 .photo-register-panel,
 .smart-register-panel {
