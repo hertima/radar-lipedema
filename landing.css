@@ -325,7 +325,7 @@ a {
 /* ---------- Problem (editorial pull-quote) ---------- */
 
 .lp-problem {
-  padding: 96px 0 88px;
+  padding: 48px 0 40px;
 }
 
 .lp-problem .wrap {
@@ -357,7 +357,7 @@ a {
 /* ---------- Relatable checklist ---------- */
 
 .lp-checklist {
-  padding: 64px 0;
+  padding: 40px 0;
 }
 
 .lp-checklist .wrap {
@@ -406,7 +406,7 @@ a {
 /* ---------- Features ---------- */
 
 .lp-features {
-  padding: 88px 0;
+  padding: 48px 0;
 }
 
 .lp-section-head {
@@ -483,7 +483,7 @@ a {
 /* ---------- How it works ---------- */
 
 .lp-how {
-  padding: 88px 0;
+  padding: 48px 0;
 }
 
 .lp-how-steps {
@@ -547,7 +547,7 @@ a {
 /* ---------- Bonus / included features ---------- */
 
 .lp-bonus {
-  padding: 88px 0;
+  padding: 48px 0;
 }
 
 .lp-bonus-grid {
@@ -595,7 +595,7 @@ a {
 /* ---------- Comparison (card rows) ---------- */
 
 .lp-compare {
-  padding: 88px 0;
+  padding: 48px 0;
 }
 
 .lp-compare-cols {
@@ -677,7 +677,7 @@ a {
 /* ---------- Mission (honesty section) ---------- */
 
 .lp-mission {
-  padding: 88px 0;
+  padding: 48px 0;
 }
 
 .lp-mission .wrap {
@@ -713,7 +713,7 @@ a {
 /* ---------- FAQ ---------- */
 
 .lp-faq {
-  padding: 88px 0;
+  padding: 48px 0;
 }
 
 .lp-faq-list {
