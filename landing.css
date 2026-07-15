@@ -715,6 +715,39 @@ a {
   text-align: center;
 }
 
+/* ---------- Price ---------- */
+
+.lp-price {
+  padding: 32px 0;
+  text-align: center;
+}
+
+.lp-price .lp-problem-label {
+  text-align: center;
+}
+
+.lp-price-old {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: line-through;
+  margin: 0 0 4px;
+}
+
+.lp-price-new {
+  font-family: "Fraunces", serif;
+  font-weight: 700;
+  font-size: clamp(44px, 12vw, 64px);
+  color: #fff;
+  margin: 0 0 6px;
+  line-height: 1;
+}
+
+.lp-price-note {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0 0 24px;
+}
+
 /* ---------- Mission (honesty section) ---------- */
 
 .lp-mission {
