@@ -326,7 +326,7 @@ a {
 /* ---------- Problem (editorial pull-quote) ---------- */
 
 .lp-problem {
-  padding: 48px 0 40px;
+  padding: 32px 0 28px;
 }
 
 .lp-problem .wrap {
@@ -358,7 +358,7 @@ a {
 /* ---------- Relatable checklist ---------- */
 
 .lp-checklist {
-  padding: 40px 0;
+  padding: 28px 0;
 }
 
 .lp-checklist .wrap {
@@ -367,10 +367,10 @@ a {
 
 .lp-checklist-list {
   list-style: none;
-  margin: 0 0 24px;
+  margin: 0 0 16px;
   padding: 0;
   display: grid;
-  gap: 16px;
+  gap: 10px;
 }
 
 .lp-checklist-list li {
@@ -408,7 +408,7 @@ a {
 /* ---------- Features ---------- */
 
 .lp-features {
-  padding: 48px 0;
+  padding: 32px 0;
 }
 
 .lp-section-head {
@@ -444,7 +444,7 @@ a {
 
 .lp-feature-card {
   background: var(--paper);
-  padding: 30px 26px;
+  padding: 22px 20px;
 }
 
 .lp-feature-visual {
@@ -486,7 +486,7 @@ a {
 /* ---------- How it works ---------- */
 
 .lp-how {
-  padding: 48px 0;
+  padding: 32px 0;
 }
 
 .lp-how-steps {
@@ -551,20 +551,20 @@ a {
 /* ---------- Bonus / included features ---------- */
 
 .lp-bonus {
-  padding: 48px 0;
+  padding: 32px 0;
 }
 
 .lp-bonus-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
+  gap: 14px;
 }
 
 .lp-bonus-card {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 18px;
-  padding: 26px;
+  padding: 20px;
 }
 
 .lp-bonus-icon {
@@ -600,7 +600,7 @@ a {
 /* ---------- Comparison (card rows) ---------- */
 
 .lp-compare {
-  padding: 48px 0;
+  padding: 32px 0;
 }
 
 .lp-compare-cols {
@@ -683,7 +683,7 @@ a {
 /* ---------- Mission (honesty section) ---------- */
 
 .lp-mission {
-  padding: 48px 0;
+  padding: 32px 0;
 }
 
 .lp-mission .wrap {
@@ -720,7 +720,7 @@ a {
 /* ---------- FAQ ---------- */
 
 .lp-faq {
-  padding: 48px 0;
+  padding: 32px 0;
 }
 
 .lp-faq-list {
@@ -732,7 +732,7 @@ a {
 .lp-faq-list details {
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 18px 22px;
+  padding: 14px 18px;
   background: var(--soft);
 }
 
@@ -772,7 +772,7 @@ a {
 
 .lp-final-cta {
   text-align: center;
-  padding: 64px 24px;
+  padding: 44px 24px;
   background: var(--purple-deep);
   color: #fff;
   position: relative;
@@ -811,7 +811,7 @@ a {
 .lp-footer {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 40px 24px 56px;
+  padding: 28px 24px 36px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
