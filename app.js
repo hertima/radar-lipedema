@@ -142,7 +142,7 @@ function computeCycleInfo(profile) {
 
   const cycleLength = profile.cycleLength || 28;
   const periodLength = profile.periodLength || 5;
-  const start = new Date(`${profile.lastPeriodStart}T00:00:00`);
+  const start = new Date(`${String(profile.lastPeriodStart).slice(0, 10)}T00:00:00`);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   start.setHours(0, 0, 0, 0);
@@ -1382,7 +1382,7 @@ const settingsPanels = {
     render() {
       stepperValues.cycleLength.value = currentProfile?.cycleLength || 28;
       stepperValues.periodLength.value = currentProfile?.periodLength || 5;
-      const lastPeriodStart = currentProfile?.lastPeriodStart || "";
+      const lastPeriodStart = currentProfile?.lastPeriodStart ? String(currentProfile.lastPeriodStart).slice(0, 10) : "";
       const today = new Date().toISOString().slice(0, 10);
       return `
         <div class="settings-form">
