@@ -736,26 +736,112 @@ a {
   margin-bottom: 16px;
 }
 
+.lp-price-heading {
+  font-size: clamp(24px, 5.5vw, 30px);
+  color: #fff;
+  margin-bottom: 24px;
+}
+
+.lp-price-plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.lp-price-plan {
+  position: relative;
+  background: var(--purple-deep);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  padding: 28px 24px;
+}
+
+.lp-price-plan-highlight {
+  background: #fff;
+}
+
+.lp-price-plan-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--pink);
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 6px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.lp-price-plan-name {
+  display: block;
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
+}
+
+.lp-price-plan-highlight .lp-price-plan-name {
+  color: var(--muted);
+}
+
 .lp-price-old {
-  font-size: 20px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.55);
   text-decoration: line-through;
   margin: 0 0 4px;
+}
+
+.lp-price-plan-highlight .lp-price-old {
+  color: var(--muted);
 }
 
 .lp-price-new {
   font-family: "Fraunces", serif;
   font-weight: 700;
-  font-size: clamp(44px, 12vw, 64px);
+  font-size: clamp(30px, 8vw, 38px);
   color: #fff;
   margin: 0 0 6px;
   line-height: 1;
 }
 
+.lp-price-new small {
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.lp-price-plan-highlight .lp-price-new {
+  color: var(--purple-deep);
+}
+
 .lp-price-note {
-  font-size: 16px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.75);
-  margin: 0 0 24px;
+  margin: 0 0 20px;
+  min-height: 40px;
+}
+
+.lp-price-plan-highlight .lp-price-note {
+  color: var(--muted);
+}
+
+.lp-price-plan .lp-cta-primary {
+  width: 100%;
+}
+
+.lp-price-plan-highlight .lp-cta-primary {
+  background: var(--purple-deep);
 }
 
 /* ---------- Mission (honesty section) ---------- */

@@ -145,14 +145,31 @@
       <section class="lp-price" aria-label="Preço">
         <div class="wrap">
           <span class="lp-price-badge">Preço de lançamento</span>
-          <p class="lp-price-old">De R$ 197,00</p>
-          <p class="lp-price-new">R$ 27,90</p>
-          <p class="lp-price-note">Pagamento único. Sem mensalidade. Valor sobe conforme mais pessoas entrarem.</p>
-          <!-- TODO: quando o gateway de pagamento (Mercado Pago/Stripe/PagSeguro) estiver pronto,
-               trocar este href pelo link do checkout real. -->
-          <a class="lp-cta-primary" data-cta data-checkout-pending>
-            <span class="lp-cta-main">Garantir meu acesso</span>
-          </a>
+          <h2 class="lp-price-heading">Escolha seu plano</h2>
+          <div class="lp-price-plans">
+            <article class="lp-price-plan">
+              <span class="lp-price-plan-name">Mensal</span>
+              <p class="lp-price-new">R$ 27,90<small>/mês</small></p>
+              <p class="lp-price-note">Cancele quando quiser.</p>
+              <!-- TODO: quando o gateway de pagamento (Mercado Pago/Stripe/PagSeguro) estiver pronto,
+                   trocar este href pelo link do checkout real (plano mensal). -->
+              <a class="lp-cta-primary" data-cta data-checkout-pending>
+                <span class="lp-cta-main">Assinar mensal</span>
+              </a>
+            </article>
+            <article class="lp-price-plan lp-price-plan-highlight">
+              <span class="lp-price-plan-badge">Economize no anual</span>
+              <span class="lp-price-plan-name">Anual</span>
+              <p class="lp-price-old">De R$ 334,80</p>
+              <p class="lp-price-new">R$ 279,00<small>/ano</small></p>
+              <p class="lp-price-note">Equivale a R$ 23,25/mês — 2 meses de desconto pagando à vista.</p>
+              <!-- TODO: quando o gateway de pagamento (Mercado Pago/Stripe/PagSeguro) estiver pronto,
+                   trocar este href pelo link do checkout real (plano anual). -->
+              <a class="lp-cta-primary" data-cta data-checkout-pending>
+                <span class="lp-cta-main">Assinar anual</span>
+              </a>
+            </article>
+          </div>
         </div>
       </section>
 
