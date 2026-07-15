@@ -181,8 +181,13 @@ a {
   margin: 0 auto;
   padding: 40px 24px 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
   align-items: end;
+}
+
+.lp-hero-copy {
+  min-width: 0;
 }
 
 .lp-eyebrow {
