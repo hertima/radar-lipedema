@@ -1056,10 +1056,6 @@ a {
   height: 72px;
 }
 
-.lp-footer-brand img.lp-footer-guarantee {
-  height: 64px;
-}
-
 @media (min-width: 760px) {
   .lp-footer-brand {
     justify-content: flex-start;
