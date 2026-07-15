@@ -183,7 +183,7 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 28px;
-  align-items: end;
+  align-items: start;
 }
 
 .lp-hero-copy {
