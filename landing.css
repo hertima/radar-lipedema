@@ -984,10 +984,28 @@ a {
   border-top: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-.lp-footer img {
-  width: 280px;
+.lp-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.lp-footer-brand img {
   height: auto;
   object-fit: contain;
+}
+
+.lp-footer-brand img:first-child {
+  width: 280px;
+}
+
+.lp-footer-guarantee {
+  width: 64px;
+}
+
+.lp-footer-secure {
+  width: 140px;
 }
 
 .lp-footer nav {
