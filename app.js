@@ -36,6 +36,8 @@ const photoSlotTemplates = [
   { name: "Costas", className: "back-view", placeholder: "imagem/radar-costas-card.png" },
 ];
 const photoSlotImages = {};
+const insightIconMap = { pink: "i-heart", purple: "i-drop", orange: "i-sun", teal: "i-trend" };
+let recordHistory = [];
 
 try {
   profilePhoto = localStorage.getItem("radar-lipedema-profile-photo") || "";
@@ -67,9 +69,25 @@ function getEvolutionLabel(score) {
   return "Cuidado";
 }
 
-function updateEvolutionScore(values = getCurrentSymptomValues()) {
-  const symptomValues = values.length ? values : [6, 5, 7, 4];
-  const average = symptomValues.reduce((total, value) => total + value, 0) / symptomValues.length;
+function updateEvolutionScore(values) {
+  if (!values || !values.length) {
+    document.querySelectorAll("[data-evolution-score]").forEach((item) => {
+      item.textContent = "--";
+    });
+    document.querySelectorAll("[data-evolution-label]").forEach((item) => {
+      item.textContent = "Sem dados";
+    });
+    document.querySelectorAll("[data-evolution-stars]").forEach((item) => {
+      item.textContent = "☆ ☆ ☆";
+    });
+    document.querySelectorAll("[data-evolution-summary]").forEach((item) => {
+      item.textContent = "Registre seus sintomas de hoje para calcular seu score de evolução.";
+    });
+    return null;
+  }
+
+  const severityValues = [values[0], values[1], values[2], 10 - values[3]];
+  const average = severityValues.reduce((total, value) => total + value, 0) / severityValues.length;
   const score = Math.max(0, Math.min(100, Math.round(100 - average * 4)));
   const label = getEvolutionLabel(score);
   const summary =
@@ -98,57 +116,390 @@ function updateEvolutionScore(values = getCurrentSymptomValues()) {
   return score;
 }
 
-function buildPremiumDataset(values = getCurrentSymptomValues()) {
-  const symptomValues = values.length ? values : [6, 5, 7, 4];
-  const [dor, edema, sensibilidade, humor] = symptomValues;
-  const score = updateEvolutionScore(symptomValues);
-  const cycleIndex = [
-    { label: "Ciclo atual", dor, edema, sensibilidade, humor, peso: 67.3, coxa: 61.0, adesao: 82 },
-    { label: "Ciclo anterior", dor: 7, edema: 6, sensibilidade: 8, humor: 4, peso: 67.7, coxa: 61.4, adesao: 74 },
-    { label: "2 ciclos atr&aacute;s", dor: 8, edema: 7, sensibilidade: 8, humor: 3, peso: 68.1, coxa: 61.8, adesao: 68 },
-  ];
-  const previous = cycleIndex[1];
-  const deltas = {
-    dor: dor - previous.dor,
-    edema: edema - previous.edema,
-    sensibilidade: sensibilidade - previous.sensibilidade,
-    peso: cycleIndex[0].peso - previous.peso,
-    coxa: cycleIndex[0].coxa - previous.coxa,
-    adesao: cycleIndex[0].adesao - previous.adesao,
+function getDailyRegisters() {
+  return recordHistory
+    .filter((record) => record.recordType === "daily_register" && record.payload?.symptoms)
+    .map((record) => ({
+      date: new Date(record.createdAt),
+      dor: Number(record.payload.symptoms.dor) || 0,
+      edema: Number(record.payload.symptoms.edema) || 0,
+      sensibilidade: Number(record.payload.symptoms.sensibilidade) || 0,
+      humor: Number(record.payload.symptoms.humor) || 0,
+    }))
+    .sort((a, b) => a.date - b.date);
+}
+
+function averageOf(entries, key) {
+  return entries.length ? entries.reduce((total, entry) => total + entry[key], 0) / entries.length : null;
+}
+
+function computeInsights(history) {
+  if (history.length < 2) {
+    return [];
+  }
+
+  const half = Math.max(1, Math.floor(history.length / 2));
+  const recent = history.slice(-half);
+  const earlier = history.slice(0, history.length - half);
+  const insights = [];
+
+  if (earlier.length) {
+    [
+      { key: "dor", color: "pink" },
+      { key: "edema", color: "purple" },
+      { key: "sensibilidade", color: "orange" },
+    ].forEach(({ key, color }) => {
+      const delta = averageOf(recent, key) - averageOf(earlier, key);
+      if (Math.abs(delta) >= 0.5) {
+        insights.push({
+          color,
+          label: seriesLabels[key],
+          text: `${delta > 0 ? "Aumentou" : "Diminuiu"} em média ${Math.abs(delta).toFixed(1)} pontos nos registros mais recentes.`,
+        });
+      }
+    });
+
+    const humorDelta = averageOf(recent, "humor") - averageOf(earlier, "humor");
+    if (Math.abs(humorDelta) >= 0.5) {
+      insights.push({
+        color: "teal",
+        label: "Humor",
+        text: `${humorDelta > 0 ? "Melhorou" : "Piorou"} em média ${Math.abs(humorDelta).toFixed(1)} pontos nos registros mais recentes.`,
+      });
+    }
+  }
+
+  const overallAverages = {
+    dor: averageOf(history, "dor"),
+    edema: averageOf(history, "edema"),
+    sensibilidade: averageOf(history, "sensibilidade"),
   };
-  const insights = [
-    sensibilidade >= 7
-      ? "Sensibilidade alta na fase l&uacute;tea: priorizar rotina anti-inflamat&oacute;ria e descanso."
-      : "Sensibilidade abaixo do pico recente: manter acompanhamento.",
-    edema >= 6
-      ? "Edema acima da meta: comparar com ingest&atilde;o de &aacute;gua, meia compressiva e ciclo."
-      : "Edema dentro da faixa acompanhada no ciclo atual.",
-    dor >= 7
-      ? "Dor elevada: registrar localiza&ccedil;&atilde;o e resposta aos tratamentos."
-      : "Dor em queda frente ao ciclo anterior.",
-  ];
+  const worstKey = ["dor", "edema", "sensibilidade"].sort((a, b) => overallAverages[b] - overallAverages[a])[0];
+  insights.push({
+    color: worstKey === "dor" ? "pink" : worstKey === "edema" ? "purple" : "orange",
+    label: seriesLabels[worstKey],
+    text: `É o sintoma com maior média entre os seus registros (${overallAverages[worstKey].toFixed(1)}/10).`,
+  });
+
+  return insights.slice(0, 3);
+}
+
+function renderHomeSnapshot(latest) {
+  const hasData = Boolean(latest);
+  const values = hasData ? [latest.dor, latest.edema, latest.sensibilidade, latest.humor] : [];
+
+  document.querySelectorAll(".symptoms-card .metric-row").forEach((row, index) => {
+    const value = hasData ? values[index] : 0;
+    row.style.setProperty("--value", `${value * 10}%`);
+    row.querySelector("span:nth-child(2)").textContent = hasData ? `${value}/10` : "--";
+  });
+
+  const average = hasData ? values.reduce((total, value) => total + value, 0) / values.length : 0;
+  const severityValues = hasData ? [values[0], values[1], values[2], 10 - values[3]] : [];
+  const maxSeverity = hasData ? Math.max(...severityValues) : 0;
+  const dominantIndex = severityValues.indexOf(maxSeverity);
+  const isNormal = !hasData || maxSeverity <= 1;
+  const dominantLevel = !hasData ? "Sem registros" : isNormal ? "Sem alerta" : maxSeverity >= 8 ? "Intenso" : maxSeverity >= 5 ? "Moderado" : "Leve";
+
+  const titleRow = document.querySelector(".symptoms-card .card-title-row span");
+  if (titleRow) {
+    titleRow.textContent = hasData ? `média ${average.toFixed(1)}/10` : "sem registros ainda";
+  }
+
+  const dominantCard = document.querySelector("[data-dominant-card]");
+  const dominantImage = document.querySelector("[data-dominant-image]");
+  const dominantName = document.querySelector("[data-dominant-name]");
+  const dominantLevelEl = document.querySelector("[data-dominant-level]");
+  if (dominantName) {
+    dominantName.textContent = !hasData ? "Sem dados" : isNormal ? "Normal" : symptomDisplayNames[dominantIndex];
+  }
+  if (dominantLevelEl) {
+    dominantLevelEl.textContent = dominantLevel;
+  }
+  if (dominantCard) {
+    dominantCard.classList.remove("symptom-dor", "symptom-edema", "symptom-sensibilidade", "symptom-humor", "symptom-neutral");
+    dominantCard.classList.add(!hasData || isNormal ? "symptom-neutral" : symptomClassNames[dominantIndex]);
+  }
+  if (dominantImage) {
+    dominantImage.onerror = () => {
+      dominantImage.onerror = null;
+      dominantImage.src = fallbackImageSource;
+    };
+    dominantImage.src = !hasData || isNormal ? normalImageSource : symptomImageSources[dominantIndex];
+    dominantImage.alt = !hasData ? "Sem dados ainda" : isNormal ? "Mapa corporal normal" : `Mapa corporal de ${symptomDisplayNames[dominantIndex].toLowerCase()}`;
+  }
+
+  const score = updateEvolutionScore(hasData ? values : null);
+
+  const insightText = document.querySelector(".insight-card p");
+  if (insightText) {
+    insightText.textContent = !hasData
+      ? "Registre seus sintomas de hoje para começar a receber insights."
+      : values[2] >= 7
+        ? "Sensibilidade continua em destaque nos seus últimos registros."
+        : score >= 80
+          ? "Seu score está ótimo, sintomas controlados e rotina consistente."
+          : "Seu registro mais recente alimenta seus insights de padrão e evolução.";
+  }
+
+  return score;
+}
+
+function renderSymptomChart(history) {
+  const svg = document.querySelector(".chart");
+  if (!svg) {
+    return;
+  }
+
+  svg.querySelectorAll(".phase").forEach((el) => el.remove());
+  const areaPath = svg.querySelector(".symptom-area");
+  if (areaPath) {
+    areaPath.setAttribute("d", "");
+  }
+
+  const points = history.slice(-8);
+  const xStart = 30;
+  const xEnd = 322;
+  const yTop = 26;
+  const yBottom = 206;
+  const xFor = (index) => (points.length <= 1 ? (xStart + xEnd) / 2 : xStart + ((xEnd - xStart) * index) / (points.length - 1));
+  const yFor = (value) => yBottom - (value / 10) * (yBottom - yTop);
+
+  ["dor", "edema", "sensibilidade", "humor"].forEach((key) => {
+    const linePath = svg.querySelector(`path.line[data-series="${key}"]`);
+    const dotsGroup = svg.querySelector(`g.dots[data-series="${key}"]`);
+    if (!linePath || !dotsGroup) {
+      return;
+    }
+
+    if (points.length < 2) {
+      linePath.setAttribute("d", "");
+      dotsGroup.innerHTML = "";
+      return;
+    }
+
+    linePath.setAttribute(
+      "d",
+      points.map((point, index) => `${index === 0 ? "M" : "L"}${xFor(index).toFixed(1)} ${yFor(point[key]).toFixed(1)}`).join(" ")
+    );
+    dotsGroup.innerHTML = points
+      .map((point, index) => `<circle cx="${xFor(index).toFixed(1)}" cy="${yFor(point[key]).toFixed(1)}" r="5"></circle>`)
+      .join("");
+  });
+
+  const labelsRow = document.querySelector(".phase-labels");
+  if (labelsRow) {
+    labelsRow.innerHTML = points.length
+      ? points.map((point) => `<span>${point.date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>`).join("")
+      : "<span>Sem registros ainda</span>";
+  }
+}
+
+function renderSymptomTable(history) {
+  const rows = document.querySelectorAll(".symptom-table > div");
+  ["dor", "edema", "sensibilidade", "humor"].forEach((key, index) => {
+    const row = rows[index];
+    if (!row) {
+      return;
+    }
+
+    const average = averageOf(history, key);
+    row.querySelector("strong").textContent = average === null ? "--" : average.toFixed(1);
+    row.querySelector("i").style.setProperty("--value", average === null ? "0%" : `${average * 10}%`);
+  });
+}
+
+function renderHistoryInsightCards(history) {
+  const container = document.querySelector(".history-insight-card");
+  if (!container) {
+    return;
+  }
+
+  const insights = computeInsights(history);
+  if (!insights.length) {
+    container.innerHTML = `
+      <button type="button" data-toast="Continue registrando para desbloquear insights">
+        <span class="history-insight-icon teal"><svg class="icon"><use href="#i-trend"></use></svg></span>
+        <strong>Registre seus sintomas em pelo menos<br>2 dias para ver insights reais.</strong>
+      </button>
+    `;
+    return;
+  }
+
+  container.innerHTML = insights
+    .map(
+      (insight) => `
+        <button type="button" data-toast="Insight: ${insight.label} - ${insight.text}">
+          <span class="history-insight-icon ${insight.color}"><svg class="icon"><use href="#${insightIconMap[insight.color]}"></use></svg></span>
+          <strong>${insight.label}<br>${insight.text}</strong>
+        </button>
+      `
+    )
+    .join("");
+}
+
+function renderDeepInsights(history) {
+  const container = document.querySelector(".insight-list.deep-insights");
+  if (!container) {
+    return;
+  }
+
+  const insights = computeInsights(history);
+  if (!insights.length) {
+    container.innerHTML = `
+      <article>
+        <span class="round-icon teal"></span>
+        <p>Continue registrando seus sintomas para desbloquear <strong>insights personalizados</strong> baseados nos seus dados reais.</p>
+      </article>
+    `;
+    return;
+  }
+
+  container.innerHTML = insights
+    .map(
+      (insight) => `
+        <article>
+          <span class="round-icon ${insight.color}"></span>
+          <p><strong>${insight.label}</strong> ${insight.text}</p>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function renderInsightsHero(history) {
+  const strongEl = document.querySelector(".insights-hero strong");
+  const spanEl = document.querySelector(".insights-hero span");
+  if (!strongEl || !spanEl) {
+    return;
+  }
+
+  const count = computeInsights(history).length;
+  strongEl.textContent = count ? `${count} padr${count === 1 ? "ão" : "ões"}` : "Sem padrões ainda";
+
+  if (history.length) {
+    const days = Math.max(1, Math.round((history[history.length - 1].date - history[0].date) / 86_400_000) + 1);
+    spanEl.textContent = `Baseado em ${history.length} registro${history.length === 1 ? "" : "s"} (${days} dia${days === 1 ? "" : "s"})`;
+  } else {
+    spanEl.textContent = "Registre seus sintomas para começar";
+  }
+}
+
+function renderRecentTrendCards(history) {
+  const titleLabel = document.querySelector(".forecast-card .section-label");
+  const kicker = document.querySelector(".forecast-card .card-title-row span");
+  const grid = document.querySelector(".forecast-grid");
+  if (!grid) {
+    return;
+  }
+
+  if (titleLabel) {
+    titleLabel.textContent = "Últimos registros";
+  }
+  if (kicker) {
+    kicker.textContent = "real";
+  }
+
+  const recent = history.slice(-3).reverse();
+  if (!recent.length) {
+    grid.innerHTML = `<article><strong>Sem registros</strong><span>Registre seus sintomas</span><i class="risk"></i></article>`;
+    return;
+  }
+
+  grid.innerHTML = recent
+    .map((record) => {
+      const average = (record.dor + record.edema + record.sensibilidade + record.humor) / 4;
+      const riskClass = average >= 7 ? "risk high" : average >= 4 ? "risk mid" : "risk";
+      return `
+        <article>
+          <strong>${record.date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</strong>
+          <span>Média ${average.toFixed(1)}</span>
+          <i class="${riskClass}"></i>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+const recordTypeLabels = {
+  daily_register: "Registros diários",
+  "save-edema": "Edema",
+  "save-measures": "Medidas",
+  "save-weight": "Peso",
+  "save-treatments": "Tratamentos",
+  "save-habits": "Hábitos",
+  "save-symptoms-extra": "Sintomas extras",
+  "save-cycle-record": "Ciclo",
+  "save-pain": "Dor detalhada",
+  "save-photos": "Fotos",
+};
+
+function buildPremiumDataset() {
+  const history = getDailyRegisters();
+  const latest = history[history.length - 1] || null;
+  const score = updateEvolutionScore(latest ? [latest.dor, latest.edema, latest.sensibilidade, latest.humor] : null);
+
+  const recordsByType = {};
+  recordHistory.forEach((record) => {
+    recordsByType[record.recordType] = (recordsByType[record.recordType] || 0) + 1;
+  });
+
+  const half = Math.max(1, Math.ceil(history.length / 2));
+  const currentPeriod = history.slice(-half);
+  const previousPeriod = history.length > half ? history.slice(0, history.length - half) : [];
+
+  const averagesOf = (entries) => ({
+    dor: averageOf(entries, "dor"),
+    edema: averageOf(entries, "edema"),
+    sensibilidade: averageOf(entries, "sensibilidade"),
+    humor: averageOf(entries, "humor"),
+  });
+
+  const currentAverages = averagesOf(currentPeriod);
+  const previousAverages = averagesOf(previousPeriod);
+  const delta = (key) => (currentAverages[key] === null || previousAverages[key] === null ? null : +(currentAverages[key] - previousAverages[key]).toFixed(1));
+
+  const insightObjects = computeInsights(history);
+  const insights = insightObjects.length
+    ? insightObjects.map((insight) => `${insight.label}: ${insight.text}`)
+    : ["Continue registrando seus sintomas para gerar insights personalizados."];
 
   return {
-    generatedAt: "14/07/2026 09:41",
+    generatedAt: new Date().toLocaleString("pt-BR"),
     score,
-    status: getEvolutionLabel(score),
-    records: {
-      sintomas: 28,
-      edema: 19,
-      medidas: 8,
-      peso: 21,
-      tratamentos: 12,
-      habitos: 26,
-      fotos: 9,
-      ciclo: 3,
+    status: score === null ? "Sem dados" : getEvolutionLabel(score),
+    hasEnoughData: history.length >= 2,
+    totalRecords: recordHistory.length,
+    records: recordsByType,
+    currentPeriod: { count: currentPeriod.length, averages: currentAverages },
+    previousPeriod: { count: previousPeriod.length, averages: previousAverages },
+    deltas: {
+      dor: delta("dor"),
+      edema: delta("edema"),
+      sensibilidade: delta("sensibilidade"),
+      humor: delta("humor"),
     },
-    cycleIndex,
-    deltas,
     insights,
   };
 }
 
+function renderDynamicData() {
+  const history = getDailyRegisters();
+  renderHomeSnapshot(history[history.length - 1] || null);
+  renderSymptomChart(history);
+  renderSymptomTable(history);
+  renderHistoryInsightCards(history);
+  renderDeepInsights(history);
+  renderInsightsHero(history);
+  renderRecentTrendCards(history);
+  updatePremiumSummaries();
+}
+
 function formatDelta(value, suffix = "") {
+  if (value === null) {
+    return "--";
+  }
+
   if (value === 0) {
     return `0${suffix}`;
   }
@@ -273,6 +624,9 @@ async function loadServerState() {
   (data.photos || []).forEach((photo) => {
     photoSlotImages[photo.slot] = photo.imageDataUrl;
   });
+
+  recordHistory = data.records || [];
+  renderDynamicData();
 }
 
 function renderPhotoSlot(slot) {
@@ -390,53 +744,58 @@ function capturePhotoFromCamera() {
   showToast(`Foto ${slotName} tirada`);
 }
 
-function getComparisonTone(value) {
-  if (value < 0) {
-    return "positive";
+function getComparisonTone(value, higherIsBetter = false) {
+  if (value === null || value === 0) {
+    return "neutral";
   }
 
-  if (value > 0) {
-    return "warning";
-  }
-
-  return "neutral";
+  const improved = higherIsBetter ? value > 0 : value < 0;
+  return improved ? "positive" : "warning";
 }
 
 function renderPremiumResource(resourceId) {
   const data = buildPremiumDataset();
-  const recordTotal = Object.values(data.records).reduce((total, value) => total + value, 0);
+  const scoreLabel = data.score === null ? "--" : data.score;
   const comparisonCards = [
-    { label: "Dor", value: formatDelta(data.deltas.dor), note: "Intensidade comparada", tone: getComparisonTone(data.deltas.dor) },
-    { label: "Edema", value: formatDelta(data.deltas.edema), note: "Incha&ccedil;o no ciclo", tone: getComparisonTone(data.deltas.edema) },
-    { label: "Peso", value: formatDelta(data.deltas.peso, " kg"), note: "Varia&ccedil;&atilde;o corporal", tone: getComparisonTone(data.deltas.peso) },
-    { label: "Coxa", value: formatDelta(data.deltas.coxa, " cm"), note: "Medida principal", tone: getComparisonTone(data.deltas.coxa) },
+    { label: "Dor", value: formatDelta(data.deltas.dor), note: "Média do período atual vs anterior", tone: getComparisonTone(data.deltas.dor) },
+    { label: "Edema", value: formatDelta(data.deltas.edema), note: "Média do período atual vs anterior", tone: getComparisonTone(data.deltas.edema) },
+    { label: "Sensibilidade", value: formatDelta(data.deltas.sensibilidade), note: "Média do período atual vs anterior", tone: getComparisonTone(data.deltas.sensibilidade) },
+    { label: "Humor", value: formatDelta(data.deltas.humor), note: "Média do período atual vs anterior", tone: getComparisonTone(data.deltas.humor, true) },
   ];
   const improvedCount = comparisonCards.filter((card) => card.tone === "positive").length;
   const warningCount = comparisonCards.filter((card) => card.tone === "warning").length;
-  const comparisonSummary =
-    improvedCount >= 3
+  const comparisonSummary = !data.hasEnoughData
+    ? {
+        title: "Ainda não há registros suficientes.",
+        detail: "Registre seus sintomas em pelo menos 2 dias diferentes para desbloquear comparativos reais.",
+      }
+    : improvedCount >= 3
       ? {
-          title: "Ciclo com melhora consistente nos principais marcadores.",
-          detail: "Os registros apontam evolu&ccedil;&atilde;o positiva em sintomas e medidas frente ao ciclo anterior.",
+          title: "Período com melhora consistente nos principais sintomas.",
+          detail: "Os registros apontam evolu&ccedil;&atilde;o positiva frente ao per&iacute;odo anterior.",
         }
       : warningCount >= 3
         ? {
-            title: "Ciclo pede mais aten&ccedil;&atilde;o e acompanhamento.",
-            detail: "Os sinais subiram em rela&ccedil;&atilde;o ao ciclo anterior; vale revisar rotina, h&aacute;bitos e tratamentos.",
+            title: "Período pede mais aten&ccedil;&atilde;o e acompanhamento.",
+            detail: "Os sinais subiram em rela&ccedil;&atilde;o ao per&iacute;odo anterior; vale revisar rotina, h&aacute;bitos e tratamentos.",
           }
         : {
-            title: "Ciclo com melhora parcial e alguns pontos de aten&ccedil;&atilde;o.",
+            title: "Período com melhora parcial e alguns pontos de aten&ccedil;&atilde;o.",
             detail: "Use esse painel para enxergar padr&otilde;es antes de gerar o relat&oacute;rio completo.",
           };
   const pdfSections = [
     { title: "Resumo cl&iacute;nico", headline: "Sintoma predominante + evolu&ccedil;&atilde;o", detail: "Texto claro para levar na consulta." },
-    { title: "Gr&aacute;ficos", headline: "Correla&ccedil;&atilde;o por ciclo e fase", detail: "Dor, edema, sensibilidade e humor." },
-    { title: "Fotos e medidas", headline: "Comparativo visual + cent&iacute;metros", detail: "Frente, lado, costas e medidas corporais." },
+    { title: "Gr&aacute;ficos", headline: "Hist&oacute;rico real de dor, edema, sensibilidade e humor", detail: "Gerado a partir dos seus registros." },
+    { title: "Fotos", headline: "Comparativo visual", detail: "Frente, lado e costas." },
     { title: "Dicas geradas", headline: data.insights[0], detail: "Baseado nos registros recentes." },
+  ];
+  const periodItems = [
+    { label: "Período atual", period: data.currentPeriod },
+    { label: "Período anterior", period: data.previousPeriod },
   ];
   const resourceTemplates = {
     "cycle-comparison": {
-      title: "Comparativos entre ciclos",
+      title: "Comparativos entre per&iacute;odos",
       content: `
         <div class="premium-resource-panel">
           <article class="premium-output-hero comparison-hero">
@@ -444,9 +803,9 @@ function renderPremiumResource(resourceId) {
               <span>Score atual</span>
               <b>${data.status}</b>
             </div>
-            <strong>${data.score}<small>/100</small></strong>
-            <div class="premium-score-track" style="--score:${data.score}%;"><i></i></div>
-            <p>Comparativo gerado com ${recordTotal} registros conectados entre sintomas, medidas, h&aacute;bitos e ciclo.</p>
+            <strong>${scoreLabel}<small>/100</small></strong>
+            <div class="premium-score-track" style="--score:${data.score || 0}%;"><i></i></div>
+            <p>Comparativo gerado com ${data.totalRecords} registro${data.totalRecords === 1 ? "" : "s"} conectados entre sintomas, h&aacute;bitos, tratamentos e fotos.</p>
           </article>
           <div class="comparison-grid">
             ${comparisonCards.map((card) => `
@@ -459,19 +818,23 @@ function renderPremiumResource(resourceId) {
             `).join("")}
           </div>
           <article class="comparison-summary">
-            <span>Leitura do ciclo</span>
+            <span>Leitura do per&iacute;odo</span>
             <strong>${comparisonSummary.title}</strong>
             <p>${comparisonSummary.detail}</p>
           </article>
           <div class="cycle-comparison-list">
-            ${data.cycleIndex.map((cycle, index) => `
+            ${periodItems.map((item, index) => `
               <article>
                 <i class="cycle-dot ${index === 0 ? "current" : ""}"></i>
                 <div>
-                  <span>${cycle.label}</span>
-                  <strong>Dor ${cycle.dor}/10 - Edema ${cycle.edema}/10</strong>
-                  <small>Peso ${cycle.peso.toFixed(1).replace(".", ",")} kg | Coxa ${cycle.coxa.toFixed(1).replace(".", ",")} cm</small>
-                  <div class="cycle-metric-bar" style="--bar:${cycle.adesao}%;"><b></b><em>Ader&ecirc;ncia ${cycle.adesao}%</em></div>
+                  <span>${item.label}</span>
+                  ${item.period.count
+                    ? `
+                      <strong>Dor ${item.period.averages.dor.toFixed(1)}/10 - Edema ${item.period.averages.edema.toFixed(1)}/10</strong>
+                      <small>Sensibilidade ${item.period.averages.sensibilidade.toFixed(1)}/10 | Humor ${item.period.averages.humor.toFixed(1)}/10</small>
+                    `
+                    : `<strong>Sem registros suficientes</strong><small>Continue registrando sintomas para preencher esse per&iacute;odo.</small>`}
+                  <small>${item.period.count} registro${item.period.count === 1 ? "" : "s"}</small>
                 </div>
               </article>
             `).join("")}
@@ -488,9 +851,9 @@ function renderPremiumResource(resourceId) {
               <span>PDF profissional</span>
               <b>Pronto</b>
             </div>
-            <strong>${data.score}<small>/100</small></strong>
-            <div class="premium-score-track" style="--score:${data.score}%;"><i></i></div>
-            <p>Relat&oacute;rio feminino, organizado e individual, com score, sintomas, edema, medidas, tratamentos, h&aacute;bitos, fotos e ciclo.</p>
+            <strong>${scoreLabel}<small>/100</small></strong>
+            <div class="premium-score-track" style="--score:${data.score || 0}%;"><i></i></div>
+            <p>Relat&oacute;rio feminino, organizado e individual, com score, sintomas, h&aacute;bitos, tratamentos, fotos e insights reais.</p>
           </article>
           <div class="pdf-section-list">
             ${pdfSections.map((section, index) => `
@@ -506,7 +869,7 @@ function renderPremiumResource(resourceId) {
           </div>
           <div class="premium-action-footer">
             <button class="panel-button" type="button" data-panel-action="export-pdf">Gerar PDF</button>
-            <small>Arquivo com capa, resumo, comparativos e dicas geradas pelos registros.</small>
+            <small>Arquivo com capa, resumo, comparativos e dicas geradas pelos seus registros reais.</small>
           </div>
         </div>
       `,
@@ -517,16 +880,16 @@ function renderPremiumResource(resourceId) {
         <div class="premium-resource-panel">
           <article class="premium-output-hero">
             <span>Pacote de dados</span>
-            <strong>${recordTotal}<small> registros</small></strong>
+            <strong>${data.totalRecords}<small> registros</small></strong>
             <p>Exporta&ccedil;&atilde;o estruturada para backup, an&aacute;lise ou relat&oacute;rio profissional.</p>
           </article>
           <div class="export-schema">
-            ${Object.entries(data.records).map(([key, value]) => `<span>${key}<strong>${value}</strong></span>`).join("")}
+            ${Object.entries(data.records).map(([key, value]) => `<span>${recordTypeLabels[key] || key}<strong>${value}</strong></span>`).join("") || "<span>Nenhum registro ainda<strong>0</strong></span>"}
           </div>
           <div class="export-format-list">
             <article>
               <strong>CSV</strong>
-              <span>Planilha com score, sintomas, ciclos e registros.</span>
+              <span>Planilha com score, sintomas e registros reais.</span>
               <small>radar-lipedema-dados.csv</small>
             </article>
             <article>
@@ -549,11 +912,10 @@ function renderPremiumResource(resourceId) {
 
 function updatePremiumSummaries() {
   const data = buildPremiumDataset();
-  const recordTotal = Object.values(data.records).reduce((total, value) => total + value, 0);
   const summaries = {
-    "cycle-comparison": `${data.cycleIndex.length} ciclos - score ${data.score}/100`,
-    "pdf-report": `${recordTotal} registros para PDF`,
-    "data-export": `CSV + JSON - ${recordTotal} registros`,
+    "cycle-comparison": data.hasEnoughData ? `${data.currentPeriod.count + data.previousPeriod.count} registros comparados` : "Registre mais dias para comparar",
+    "pdf-report": `${data.totalRecords} registros para PDF`,
+    "data-export": `CSV + JSON - ${data.totalRecords} registros`,
   };
 
   Object.entries(summaries).forEach(([key, value]) => {
@@ -605,68 +967,6 @@ function escapePdfText(value) {
   return normalizeReportText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
-function createSimplePdf(lines) {
-  const pageWidth = 595;
-  const pageHeight = 842;
-  const contentLines = [];
-  let y = 790;
-
-  lines.forEach((line) => {
-    const text = escapePdfText(line.text || "");
-    const size = line.size || 11;
-    const leading = line.leading || size + 8;
-    contentLines.push(`BT /F1 ${size} Tf ${line.x || 48} ${y} Td (${text}) Tj ET`);
-    y -= leading;
-  });
-
-  const stream = contentLines.join("\n");
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`,
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
-  ];
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-
-  objects.forEach((object, index) => {
-    offsets.push(pdf.length);
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  });
-
-  const xrefOffset = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  offsets.slice(1).forEach((offset) => {
-    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
-  });
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-
-  return new Blob([pdf], { type: "application/pdf" });
-}
-
-function getReportLines() {
-  const data = buildPremiumDataset();
-  const totalRecords = Object.values(data.records).reduce((total, value) => total + value, 0);
-
-  return [
-    { text: "Radar Lipedema - Relatorio Premium", size: 20, leading: 28 },
-    { text: `Gerado em: ${data.generatedAt}`, size: 10, leading: 22 },
-    { text: `Score de evolucao: ${data.score}/100 - ${data.status}`, size: 15, leading: 26 },
-    { text: `Total de registros analisados: ${totalRecords}`, size: 12, leading: 24 },
-    { text: "Resumo dos registros", size: 14, leading: 22 },
-    ...Object.entries(data.records).map(([key, value]) => ({ text: `${key}: ${value}`, size: 11, leading: 17 })),
-    { text: "Comparativo entre ciclos", size: 14, leading: 24 },
-    ...data.cycleIndex.map((cycle) => ({
-      text: `${cycle.label}: dor ${cycle.dor}/10, edema ${cycle.edema}/10, sensibilidade ${cycle.sensibilidade}/10, peso ${cycle.peso} kg, aderencia ${cycle.adesao}%`,
-      size: 10,
-      leading: 17,
-    })),
-    { text: "Insights e dicas geradas", size: 14, leading: 24 },
-    ...data.insights.map((insight) => ({ text: `- ${insight}`, size: 10, leading: 17 })),
-    { text: "Observacao: este relatorio apoia acompanhamento e nao substitui avaliacao profissional.", size: 9, leading: 14 },
-  ];
-}
 
 function pdfColor([red, green, blue]) {
   return `${red.toFixed(3)} ${green.toFixed(3)} ${blue.toFixed(3)}`;
@@ -707,7 +1007,7 @@ function wrapReportLine(text, maxLength = 72) {
 
 function createPremiumReportPdf() {
   const data = buildPremiumDataset();
-  const totalRecords = Object.values(data.records).reduce((total, value) => total + value, 0);
+  const scoreLabel = data.score === null ? "--" : data.score;
   const commands = [];
   const pageWidth = 595;
   const pageHeight = 842;
@@ -726,26 +1026,20 @@ function createPremiumReportPdf() {
   commands.push(pdfText("Radar Lipedema", 42, 807, 24, purple, "F2"));
   commands.push(pdfText("Relatorio Premium", 42, 784, 15, ink, "F2"));
   commands.push(pdfText(`Gerado em ${data.generatedAt}`, 42, 765, 10, muted));
-  commands.push(pdfText(`${data.score}`, 438, 800, 34, ink, "F2"));
+  commands.push(pdfText(`${scoreLabel}`, 438, 800, 34, ink, "F2"));
   commands.push(pdfText("/100", 492, 802, 13, muted, "F2"));
   commands.push(pdfText(data.status, 440, 780, 13, purple, "F2"));
 
   commands.push(pdfText("Score de evolucao", 42, 719, 15, ink, "F2"));
-  commands.push(pdfText("Uma leitura consolidada de sintomas, edema, medidas, peso, habitos, fotos e ciclo.", 42, 700, 10, muted));
+  commands.push(pdfText("Uma leitura consolidada dos seus registros reais de sintomas, habitos, tratamentos e fotos.", 42, 700, 10, muted));
   commands.push(pdfRect(42, 681, 510, 10, [0.93, 0.90, 0.96]));
-  commands.push(pdfRect(42, 681, Math.round(510 * (data.score / 100)), 10, pink));
+  commands.push(pdfRect(42, 681, Math.round(510 * ((data.score || 0) / 100)), 10, pink));
 
   commands.push(pdfText("Resumo dos registros", 42, 646, 15, ink, "F2"));
-  const recordLabels = [
-    ["Sintomas", data.records.sintomas],
-    ["Edema", data.records.edema],
-    ["Medidas", data.records.medidas],
-    ["Peso", data.records.peso],
-    ["Tratamentos", data.records.tratamentos],
-    ["Habitos", data.records.habitos],
-    ["Fotos", data.records.fotos],
-    ["Ciclo", data.records.ciclo],
-  ];
+  const recordLabels = Object.entries(data.records).map(([key, value]) => [recordTypeLabels[key] || key, value]);
+  if (!recordLabels.length) {
+    recordLabels.push(["Nenhum registro ainda", 0]);
+  }
   recordLabels.forEach(([label, value], index) => {
     const column = index % 2;
     const row = Math.floor(index / 2);
@@ -756,21 +1050,27 @@ function createPremiumReportPdf() {
     commands.push(pdfText(String(value), x + 204, y + 18, 14, purple, "F2"));
   });
 
-  commands.push(pdfText("Comparativo entre ciclos", 42, 414, 15, ink, "F2"));
+  commands.push(pdfText("Comparativo entre periodos", 42, 414, 15, ink, "F2"));
   commands.push(pdfRect(42, 390, 510, 24, purple));
-  ["Ciclo", "Dor", "Edema", "Sens.", "Peso", "Adesao"].forEach((title, index) => {
-    const x = [54, 222, 274, 334, 400, 472][index];
+  ["Periodo", "Dor", "Edema", "Sens.", "Humor"].forEach((title, index) => {
+    const x = [54, 254, 320, 386, 452][index];
     commands.push(pdfText(title, x, 398, 10, [1, 1, 1], "F2"));
   });
-  data.cycleIndex.forEach((cycle, index) => {
+  [
+    { label: "Atual", period: data.currentPeriod },
+    { label: "Anterior", period: data.previousPeriod },
+  ].forEach(({ label, period }, index) => {
     const y = 357 - index * 35;
     commands.push(pdfRect(42, y, 510, 30, index % 2 === 0 ? [1, 1, 1] : [0.99, 0.97, 1.0], line));
-    commands.push(pdfText(cycle.label, 54, y + 11, 9, ink, "F2"));
-    commands.push(pdfText(`${cycle.dor}/10`, 224, y + 11, 9, muted));
-    commands.push(pdfText(`${cycle.edema}/10`, 276, y + 11, 9, muted));
-    commands.push(pdfText(`${cycle.sensibilidade}/10`, 338, y + 11, 9, muted));
-    commands.push(pdfText(`${cycle.peso.toFixed(1)} kg`, 396, y + 11, 9, muted));
-    commands.push(pdfText(`${cycle.adesao}%`, 480, y + 11, 9, muted));
+    commands.push(pdfText(label, 54, y + 11, 9, ink, "F2"));
+    if (period.count) {
+      commands.push(pdfText(`${period.averages.dor.toFixed(1)}/10`, 256, y + 11, 9, muted));
+      commands.push(pdfText(`${period.averages.edema.toFixed(1)}/10`, 322, y + 11, 9, muted));
+      commands.push(pdfText(`${period.averages.sensibilidade.toFixed(1)}/10`, 388, y + 11, 9, muted));
+      commands.push(pdfText(`${period.averages.humor.toFixed(1)}/10`, 454, y + 11, 9, muted));
+    } else {
+      commands.push(pdfText("Sem registros suficientes", 256, y + 11, 9, muted));
+    }
   });
 
   commands.push(pdfText("Insights e dicas geradas", 42, 252, 15, ink, "F2"));
@@ -787,7 +1087,7 @@ function createPremiumReportPdf() {
   commands.push(pdfRect(42, 38, 510, 38, [0.98, 0.95, 1.0], line));
   commands.push(pdfText("Observacao", 58, 60, 10, purple, "F2"));
   commands.push(pdfText("Este relatorio apoia acompanhamento e nao substitui avaliacao profissional.", 58, 47, 9, muted));
-  commands.push(pdfText(`Total analisado: ${totalRecords} registros`, 420, 23, 9, muted));
+  commands.push(pdfText(`Total analisado: ${data.totalRecords} registros`, 420, 23, 9, muted));
 
   const stream = commands.join("\n");
   const objects = [
@@ -830,20 +1130,23 @@ function downloadJsonExport() {
 
 function downloadCsvExport() {
   const data = buildPremiumDataset();
+  const periodRow = (label, period) => [
+    period.count
+      ? [label, "dor", period.averages.dor.toFixed(1)]
+      : [label, "dor", ""],
+    [label, "edema", period.count ? period.averages.edema.toFixed(1) : ""],
+    [label, "sensibilidade", period.count ? period.averages.sensibilidade.toFixed(1) : ""],
+    [label, "humor", period.count ? period.averages.humor.toFixed(1) : ""],
+    [label, "registros", period.count],
+  ];
   const rows = [
     ["tipo", "campo", "valor"],
     ["score", "score", data.score],
     ["score", "status", normalizeReportText(data.status)],
-    ...Object.entries(data.records).map(([key, value]) => ["registros", key, value]),
-    ...data.cycleIndex.flatMap((cycle) => [
-      [cycle.label, "dor", cycle.dor],
-      [cycle.label, "edema", cycle.edema],
-      [cycle.label, "sensibilidade", cycle.sensibilidade],
-      [cycle.label, "humor", cycle.humor],
-      [cycle.label, "peso", cycle.peso],
-      [cycle.label, "coxa", cycle.coxa],
-      [cycle.label, "adesao", cycle.adesao],
-    ]),
+    ["score", "total_registros", data.totalRecords],
+    ...Object.entries(data.records).map(([key, value]) => ["registros", recordTypeLabels[key] || key, value]),
+    ...periodRow("periodo_atual", data.currentPeriod),
+    ...periodRow("periodo_anterior", data.previousPeriod),
   ];
   const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
   downloadFile("radar-lipedema-dados.csv", "text/csv;charset=utf-8", csv);
@@ -1863,9 +2166,7 @@ settingsPanelContent.addEventListener("click", (event) => {
       fields: collectPanelData(),
       photos: Object.keys(photoSlotImages),
       savedAt: new Date().toISOString(),
-    });
-    updateEvolutionScore();
-    updatePremiumSummaries();
+    }).then(() => loadServerState());
     closeSettingsPanel();
   }
 });
@@ -1891,46 +2192,16 @@ document.querySelectorAll("[data-period-step]").forEach((button) => {
 });
 
 document.querySelectorAll("[data-save-register]").forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
     const values = getCurrentSymptomValues();
-    document.querySelectorAll(".symptoms-card .metric-row").forEach((row, index) => {
-      const value = values[index];
-      row.style.setProperty("--value", `${value * 10}%`);
-      row.querySelector("span:nth-child(2)").textContent = `${value}/10`;
-    });
-
     const average = values.reduce((total, value) => total + value, 0) / values.length;
-    const maxValue = Math.max(...values);
-    const dominantIndex = values.indexOf(maxValue);
-    const isNormal = maxValue <= 1;
-    const dominantLevel = isNormal ? "Sem alerta" : maxValue >= 8 ? "Intenso" : maxValue >= 5 ? "Moderado" : "Leve";
-    const dominantCard = document.querySelector("[data-dominant-card]");
-    const dominantImage = document.querySelector("[data-dominant-image]");
-    document.querySelector(".symptoms-card .card-title-row span").textContent = `m\u00e9dia ${average.toFixed(1)}/10`;
-    document.querySelector("[data-dominant-name]").textContent = isNormal ? "Normal" : symptomDisplayNames[dominantIndex];
-    document.querySelector("[data-dominant-level]").textContent = dominantLevel;
-    if (dominantCard) {
-      dominantCard.classList.remove("symptom-dor", "symptom-edema", "symptom-sensibilidade", "symptom-humor", "symptom-neutral");
-      dominantCard.classList.add(isNormal ? "symptom-neutral" : symptomClassNames[dominantIndex]);
-    }
-    if (dominantImage) {
-      dominantImage.onerror = () => {
-        dominantImage.onerror = null;
-        dominantImage.src = fallbackImageSource;
-      };
-      dominantImage.src = isNormal ? normalImageSource : symptomImageSources[dominantIndex];
-      dominantImage.alt = isNormal ? "Mapa corporal normal" : `Mapa corporal de ${symptomDisplayNames[dominantIndex].toLowerCase()}`;
-    }
-    const score = updateEvolutionScore(values);
-    updatePremiumSummaries();
-    document.querySelector(".insight-card p").textContent =
-      values[2] >= 7
-        ? "Sensibilidade continua em destaque na fase l\u00fatea."
-        : score >= 80
-          ? "Seu score melhorou com sintomas mais controlados e rotina consistente."
-          : "Seu registro alimentou novos insights de padr\u00e3o e evolu\u00e7\u00e3o.";
+    const severityValues = [values[0], values[1], values[2], 10 - values[3]];
+    const maxSeverity = Math.max(...severityValues);
+    const dominantIndex = severityValues.indexOf(maxSeverity);
+    const isNormal = maxSeverity <= 1;
+    const dominantLevel = isNormal ? "Sem alerta" : maxSeverity >= 8 ? "Intenso" : maxSeverity >= 5 ? "Moderado" : "Leve";
 
-    saveRecordToServer("daily_register", {
+    await saveRecordToServer("daily_register", {
       symptoms: {
         dor: values[0],
         edema: values[1],
@@ -1938,13 +2209,13 @@ document.querySelectorAll("[data-save-register]").forEach((button) => {
         humor: values[3],
       },
       average,
-      score,
       dominant: isNormal ? "Normal" : symptomDisplayNames[dominantIndex],
       dominantLevel,
       note: document.querySelector("#register .notes-field textarea")?.value || "",
       savedAt: new Date().toISOString(),
     });
 
+    await loadServerState();
     showToast("Registro salvo");
     showScreen("home");
   });
@@ -1962,7 +2233,6 @@ async function bootApp() {
   }
 }
 
-updateEvolutionScore();
-updatePremiumSummaries();
+renderDynamicData();
 setProfilePhoto(profilePhoto);
 bootApp();

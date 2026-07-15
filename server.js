@@ -380,7 +380,7 @@ app.get("/api/bootstrap", requireAuth, asyncRoute(async (request, response) => {
          from records
         where profile_id = $1
         order by created_at desc
-        limit 20`,
+        limit 200`,
       [request.userId]
     ),
     latestPhotos(request.userId),
