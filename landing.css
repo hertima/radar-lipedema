@@ -231,6 +231,10 @@ a {
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   background: var(--pink);
   color: #fff;
   text-decoration: none;
