@@ -279,6 +279,34 @@ a {
   border: 6px solid rgba(255, 255, 255, 0.25);
 }
 
+.lp-hero-mascot-float {
+  position: absolute;
+  width: 76px;
+  height: auto;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.3));
+}
+
+.lp-hero-mascot-float-1 {
+  top: -10px;
+  left: -22px;
+}
+
+.lp-hero-mascot-float-2 {
+  bottom: 30px;
+  right: -22px;
+  width: 64px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-hero-mascot-float-1 {
+    animation: float 5.5s ease-in-out infinite;
+  }
+
+  .lp-hero-mascot-float-2 {
+    animation: float 6.5s ease-in-out infinite reverse;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .lp-hero-shot {
     animation: float 6s ease-in-out infinite;
