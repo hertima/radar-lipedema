@@ -1049,7 +1049,7 @@ a {
 }
 
 .lp-footer-brand img:first-child {
-  height: 48px;
+  height: 56px;
 }
 
 @media (min-width: 760px) {
@@ -1064,7 +1064,7 @@ a {
   }
 
   .lp-footer-brand img:first-child {
-    height: 62px;
+    height: 72px;
   }
 }
 
