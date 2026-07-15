@@ -1,11 +1,21 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap");
+
 :root {
+  /* Exact brand tokens from the app (styles.css) */
   --ink: #171022;
-  --muted: #6b5f78;
+  --muted: #756a83;
   --line: #eadff0;
   --soft: #fbf6ff;
   --pink: #f43f82;
   --purple: #6e34d8;
   --purple-deep: #40148f;
+  --teal: #13b8b0;
+  --orange: #f59e2e;
+
+  /* Landing-only companions */
+  --stage: #150a24;
+  --stage-line: rgba(255, 255, 255, 0.12);
+  --paper: #fffdfe;
 }
 
 * {
@@ -16,12 +26,31 @@ html {
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   margin: 0;
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   color: var(--ink);
-  background: #fff;
-  line-height: 1.5;
+  background: var(--paper);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+p {
+  max-width: 62ch;
 }
 
 img {
@@ -29,9 +58,13 @@ img {
   display: block;
 }
 
+a {
+  color: inherit;
+}
+
 .icon {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
@@ -39,13 +72,27 @@ img {
   stroke-linejoin: round;
 }
 
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* ---------- Nav ---------- */
+
 .lp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  max-width: 1100px;
+  max-width: 1120px;
   margin: 0 auto;
+  padding: 18px 24px;
+  background: rgba(255, 253, 254, 0.82);
+  backdrop-filter: blur(10px);
 }
 
 .lp-brand {
@@ -54,12 +101,14 @@ img {
   gap: 10px;
   text-decoration: none;
   color: var(--ink);
-  font-weight: 850;
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 18px;
 }
 
 .lp-brand img {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   object-fit: cover;
 }
@@ -68,228 +117,490 @@ img {
   background: linear-gradient(135deg, var(--pink), var(--purple));
   color: #fff;
   text-decoration: none;
-  font-weight: 800;
-  padding: 10px 18px;
-  border-radius: 999px;
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
   font-size: 14px;
+  padding: 11px 20px;
+  border-radius: 999px;
 }
 
+/* ---------- Hero (dark stage) ---------- */
+
 .lp-hero {
-  max-width: 1100px;
+  position: relative;
+  background: var(--stage);
+  color: #f4eefc;
+  overflow: hidden;
+  padding: 56px 0 0;
+}
+
+.lp-hero::before {
+  content: "";
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 640px;
+  background: radial-gradient(circle at 30% 20%, rgba(244, 63, 130, 0.35), transparent 60%),
+    radial-gradient(circle at 75% 10%, rgba(110, 52, 216, 0.4), transparent 55%);
+  pointer-events: none;
+}
+
+.lp-hero-inner {
+  position: relative;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 20px 20px 60px;
+  padding: 40px 24px 0;
   display: grid;
-  gap: 32px;
+  gap: 28px;
+  align-items: end;
+}
+
+.lp-eyebrow {
+  display: inline-flex;
   align-items: center;
+  gap: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f4b8d1;
+  margin-bottom: 18px;
+}
+
+.lp-eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pink);
 }
 
 .lp-hero h1 {
-  font-size: clamp(28px, 5vw, 44px);
-  line-height: 1.15;
-  margin: 0 0 16px;
+  font-size: clamp(30px, 4.6vw, 48px);
+  line-height: 1.12;
+  color: #fff;
+  max-width: 14ch;
+  margin-bottom: 20px;
 }
 
 .lp-hero-copy p {
-  color: var(--muted);
   font-size: 17px;
-  margin: 0 0 24px;
+  color: #cabfdc;
+  margin: 0 0 28px;
+  max-width: 46ch;
 }
 
 .lp-cta-primary {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   background: linear-gradient(135deg, var(--pink), var(--purple));
   color: #fff;
   text-decoration: none;
-  font-weight: 850;
-  font-size: 17px;
-  padding: 16px 28px;
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 16px 26px;
   border-radius: 14px;
-  box-shadow: 0 16px 32px rgba(110, 52, 216, 0.28);
-}
-
-.lp-hero-note {
-  margin-top: 12px !important;
-  font-size: 13px !important;
-  color: var(--muted);
+  box-shadow: 0 18px 40px rgba(244, 63, 130, 0.35);
 }
 
 .lp-hero-art {
+  position: relative;
   justify-self: center;
+  width: 100%;
+  max-width: 380px;
 }
 
 .lp-hero-art img {
-  max-width: 280px;
-  border-radius: 24px;
+  width: 100%;
+  filter: drop-shadow(0 40px 60px rgba(0, 0, 0, 0.55));
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .lp-hero-art img {
+    animation: float 6s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+/* ---------- Problem (editorial pull-quote) ---------- */
+
 .lp-problem {
-  background: var(--soft);
-  padding: 60px 20px;
-  text-align: center;
+  background: var(--paper);
+  padding: 96px 0 88px;
+}
+
+.lp-problem .wrap {
+  max-width: 860px;
+}
+
+.lp-problem-label {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pink);
+  margin-bottom: 18px;
+  display: block;
 }
 
 .lp-problem h2 {
-  max-width: 720px;
-  margin: 0 auto 16px;
-  font-size: clamp(22px, 4vw, 30px);
+  font-size: clamp(24px, 4vw, 34px);
+  line-height: 1.35;
+  color: var(--ink);
 }
 
-.lp-problem p {
-  max-width: 640px;
-  margin: 0 auto;
+.lp-problem h2 em {
+  font-style: italic;
+  color: var(--purple);
+}
+
+/* ---------- Relatable checklist ---------- */
+
+.lp-checklist {
+  background: var(--soft);
+  padding: 64px 0;
+}
+
+.lp-checklist .wrap {
+  max-width: 720px;
+}
+
+.lp-checklist-list {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.lp-checklist-list li {
+  position: relative;
+  padding-left: 32px;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.lp-checklist-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--pink), var(--purple));
+}
+
+.lp-checklist-foot {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.lp-problem-foot {
+  margin-top: 28px;
   color: var(--muted);
   font-size: 16px;
 }
 
+/* ---------- Features ---------- */
+
 .lp-features {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 64px 20px;
+  background: var(--soft);
+  padding: 88px 0;
 }
 
-.lp-features h2,
-.lp-how h2,
-.lp-mission h2 {
-  text-align: center;
-  font-size: clamp(22px, 4vw, 30px);
-  margin: 0 0 40px;
+.lp-section-head {
+  max-width: 640px;
+  margin: 0 0 48px;
+}
+
+.lp-section-head span {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--purple);
+  display: block;
+  margin-bottom: 14px;
+}
+
+.lp-section-head h2 {
+  font-size: clamp(24px, 4vw, 32px);
 }
 
 .lp-feature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+  gap: 4px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  overflow: hidden;
 }
 
 .lp-feature-card {
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 24px;
+  background: var(--paper);
+  padding: 30px 26px;
 }
 
-.lp-feature-card img {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  object-fit: cover;
-  margin-bottom: 14px;
-}
-
-.lp-feature-icon {
-  display: inline-flex;
+.lp-feature-visual {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: var(--soft);
-  color: var(--purple);
-  margin-bottom: 14px;
+  margin-bottom: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--pink), var(--purple));
+}
+
+.lp-feature-visual.is-photo {
+  background: none;
+  overflow: hidden;
+}
+
+.lp-feature-visual.is-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .lp-feature-card h3 {
   font-size: 17px;
   margin: 0 0 8px;
+  color: var(--ink);
 }
 
 .lp-feature-card p {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 14.5px;
   margin: 0;
 }
 
+/* ---------- How it works ---------- */
+
 .lp-how {
-  background: var(--soft);
-  padding: 64px 20px;
+  background: var(--paper);
+  padding: 88px 0;
 }
 
 .lp-how-steps {
-  max-width: 1100px;
-  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 24px;
-  text-align: center;
+  gap: 40px;
+  position: relative;
+}
+
+.lp-how-steps::before {
+  content: "";
+  position: absolute;
+  top: 23px;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: repeating-linear-gradient(to right, var(--line) 0 8px, transparent 8px 14px);
+  display: none;
+}
+
+@media (min-width: 760px) {
+  .lp-how-steps::before {
+    display: block;
+  }
+}
+
+.lp-step {
+  position: relative;
 }
 
 .lp-step-number {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--pink), var(--purple));
-  color: #fff;
-  font-weight: 850;
-  margin-bottom: 12px;
+  background: var(--paper);
+  border: 2px solid var(--purple);
+  color: var(--purple);
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 1;
 }
 
-.lp-how-steps h3 {
-  margin: 0 0 8px;
+.lp-step h3 {
   font-size: 16px;
+  margin: 0 0 8px;
+  color: var(--ink);
 }
 
-.lp-how-steps p {
+.lp-step p {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 14.5px;
   margin: 0;
 }
 
+/* ---------- Mission (honesty section) ---------- */
+
 .lp-mission {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 64px 20px;
-  text-align: center;
+  background: var(--soft);
+  padding: 88px 0;
 }
 
-.lp-mission .lp-feature-icon {
-  margin: 0 auto 16px;
+.lp-mission .wrap {
+  display: grid;
+  gap: 40px;
+  align-items: center;
+  max-width: 960px;
+}
+
+.lp-mission-art img {
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+.lp-mission h2 {
+  font-size: clamp(22px, 4vw, 28px);
+  margin-bottom: 16px;
 }
 
 .lp-mission p {
   color: var(--muted);
-  font-size: 15px;
+  font-size: 15.5px;
+  max-width: 56ch;
 }
+
+@media (min-width: 760px) {
+  .lp-mission .wrap {
+    grid-template-columns: 200px 1fr;
+  }
+}
+
+/* ---------- FAQ ---------- */
+
+.lp-faq {
+  background: var(--paper);
+  padding: 88px 0;
+}
+
+.lp-faq-list {
+  display: grid;
+  gap: 12px;
+  max-width: 760px;
+}
+
+.lp-faq-list details {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 22px;
+  background: var(--soft);
+}
+
+.lp-faq-list summary {
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 15.5px;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.lp-faq-list summary::-webkit-details-marker {
+  display: none;
+}
+
+.lp-faq-list summary::before {
+  content: "+";
+  display: inline-block;
+  width: 18px;
+  color: var(--purple);
+  font-weight: 800;
+}
+
+.lp-faq-list details[open] summary::before {
+  content: "–";
+}
+
+.lp-faq-list p {
+  margin: 12px 0 0 18px;
+  color: var(--muted);
+  font-size: 14.5px;
+}
+
+/* ---------- Final CTA ---------- */
 
 .lp-final-cta {
   text-align: center;
-  padding: 70px 20px;
-  background: linear-gradient(135deg, var(--purple-deep), var(--purple));
+  padding: 96px 24px;
+  background: var(--stage);
   color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-final-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(244, 63, 130, 0.28), transparent 60%);
+  pointer-events: none;
 }
 
 .lp-final-cta h2 {
-  font-size: clamp(24px, 4vw, 32px);
-  margin: 0 0 24px;
+  position: relative;
+  font-size: clamp(26px, 4.5vw, 36px);
+  margin: 0 0 12px;
+  max-width: 18ch;
+  margin-inline: auto;
+}
+
+.lp-final-cta-sub {
+  position: relative;
+  color: #cabfdc;
+  font-size: 16px;
+  margin: 0 auto 28px;
 }
 
 .lp-final-cta .lp-cta-primary {
-  background: #fff;
-  color: var(--purple-deep);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+  position: relative;
 }
 
+/* ---------- Footer ---------- */
+
 .lp-footer {
-  max-width: 1100px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 32px 20px 48px;
+  padding: 40px 24px 56px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  border-top: 1px solid var(--line);
 }
 
 .lp-footer img {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
 }
 
 .lp-footer nav {
   display: flex;
-  gap: 20px;
+  gap: 22px;
 }
 
 .lp-footer a {
@@ -308,13 +619,14 @@ img {
 }
 
 @media (min-width: 760px) {
-  .lp-hero {
-    grid-template-columns: 1.1fr 0.9fr;
-    padding-top: 60px;
+  .lp-hero-inner {
+    grid-template-columns: 1.15fr 0.85fr;
+    padding-bottom: 0;
   }
 
-  .lp-hero-art img {
-    max-width: 100%;
+  .lp-hero-art {
+    align-self: end;
+    max-width: 320px;
   }
 
   .lp-footer p {
@@ -324,19 +636,22 @@ img {
   }
 }
 
+/* ---------- Legal pages ---------- */
+
 .legal-page {
-  max-width: 720px;
+  max-width: 680px;
   margin: 0 auto;
-  padding: 40px 20px 80px;
+  padding: 48px 24px 96px;
 }
 
 .legal-page h1 {
-  font-size: 26px;
+  font-size: 28px;
 }
 
 .legal-page h2 {
   font-size: 18px;
-  margin-top: 32px;
+  margin-top: 36px;
+  margin-bottom: 10px;
 }
 
 .legal-page p,
@@ -356,4 +671,5 @@ img {
   text-decoration: none;
   font-weight: 700;
   font-size: 14px;
+  font-family: "Inter", sans-serif;
 }

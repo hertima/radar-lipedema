@@ -11,7 +11,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="imagem/icons/favicon-16.png">
     <link rel="shortcut icon" href="imagem/icons/favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="imagem/icons/apple-touch-icon.png">
-    <meta name="theme-color" content="#6e34d8">
+    <meta name="theme-color" content="#150a24">
 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Radar Lipedema">
@@ -33,10 +33,12 @@
       Sem isso, cliques de campanhas pagas não são rastreados para otimização.
     -->
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="landing.css">
   </head>
   <body>
-    <svg aria-hidden="true" class="icon-sprite" style="position:absolute;width:0;height:0;overflow:hidden">
+    <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
       <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11Z"></path></symbol>
       <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M8 3v4M16 3v4M4 10h16"></path></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></symbol>
@@ -56,87 +58,158 @@
 
     <main>
       <section class="lp-hero">
-        <div class="lp-hero-copy">
-          <h1>Entenda os padrões do seu corpo e sinta que finalmente tem controle sobre o lipedema.</h1>
-          <p>Registre sintomas, ciclo, tratamentos e evolução em um só lugar — e leve dados reais para sua consulta médica, não só a sensação de "acho que piorou".</p>
-          <a class="lp-cta-primary" data-cta href="https://app.radarlipedema.com.br">Criar minha conta</a>
+        <div class="lp-hero-inner">
+          <div class="lp-hero-copy">
+            <span class="lp-eyebrow">Feito para quem vive lipedema</span>
+            <h1>Pare de acordar inchada sem entender o motivo.</h1>
+            <p>O Radar Lipedema cruza seus registros de dor e inchaço com o seu ciclo menstrual — e mostra o padrão real por trás das suas crises, não só a sensação de "acho que piorou".</p>
+            <a class="lp-cta-primary" data-cta href="https://app.radarlipedema.com.br">Quero entender meu inchaço</a>
+          </div>
+          <div class="lp-hero-art">
+            <img src="imagem/imagem/LANDING PAGE.png" alt="Tela inicial do Radar Lipedema mostrando sequência de dias, fase do ciclo e sintomas de hoje">
+          </div>
         </div>
-        <div class="lp-hero-art">
-          <img src="imagem/imagem/RADR.png" alt="Telas do Radar Lipedema: login, home, registro de sintomas, histórico e ajustes">
+      </section>
+
+      <section class="lp-checklist">
+        <div class="wrap">
+          <span class="lp-problem-label">Isso é pra você se</span>
+          <ul class="lp-checklist-list">
+            <li>Você veste uma calça de manhã e ela aperta nas panturrilhas à tarde.</li>
+            <li>Seu corpo parece inchar do nada e você acaba culpando a própria alimentação.</li>
+            <li>Suas pernas ficam pesadas nos dias antes de menstruar, sempre no mesmo padrão.</li>
+            <li>Já ouviu que "é só retenção normal" — mas você sabe que a dor é real.</li>
+          </ul>
+          <p class="lp-checklist-foot">Se marcou 2 ou mais, o app foi feito pensando exatamente nisso.</p>
         </div>
       </section>
 
       <section class="lp-problem">
-        <h2>Lipedema é difícil de explicar. E ainda mais difícil de acompanhar sozinha.</h2>
-        <p>Dor que muda de um dia pro outro, inchaço que parece piorar antes da menstruação, tratamentos que você faz mas não sabe se estão fazendo diferença de verdade. Sem registro, tudo vira lembrança vaga — inclusive na hora de contar pro seu médico.</p>
+        <div class="wrap">
+          <span class="lp-problem-label">O que ninguém te conta</span>
+          <h2>O inchaço do lipedema segue um padrão hormonal — mas sem registrar, ele parece <em>completamente aleatório</em>.</h2>
+          <p class="lp-problem-foot">Você tenta dieta, chá, drenagem, sem saber se algo realmente funcionou ou se foi coincidência. Sem dados, cada crise parece surgir do nada — inclusive na hora de tentar explicar pro seu médico o que você sente.</p>
+        </div>
       </section>
 
       <section class="lp-features" aria-label="O que o app faz">
-        <h2>Tudo que você precisa registrar, num só app</h2>
-        <div class="lp-feature-grid">
-          <article class="lp-feature-card">
-            <img src="imagem/dor-card.png" alt="">
-            <h3>Dor, edema, sensibilidade e humor</h3>
-            <p>Registre todos os dias e veja gráficos reais de evolução, não uma sensação vaga.</p>
-          </article>
-          <article class="lp-feature-card">
-            <span class="lp-feature-icon"><svg class="icon"><use href="#i-calendar"></use></svg></span>
-            <h3>Ciclo menstrual</h3>
-            <p>Veja como fase folicular, ovulação e TPM se relacionam com seus sintomas ao longo do tempo.</p>
-          </article>
-          <article class="lp-feature-card">
-            <span class="lp-feature-icon"><svg class="icon"><use href="#i-check"></use></svg></span>
-            <h3>Tratamentos e meia de compressão</h3>
-            <p>Acompanhe drenagem, fisioterapia, exercício e horas reais de uso da meia — e receba lembrete de quando trocar.</p>
-          </article>
-          <article class="lp-feature-card">
-            <span class="lp-feature-icon"><svg class="icon"><use href="#i-chart"></use></svg></span>
-            <h3>Peso e medidas por membro</h3>
-            <p>Coxas, panturrilhas e tornozelos separadamente — porque lipedema não afeta o corpo todo por igual.</p>
-          </article>
-          <article class="lp-feature-card">
-            <span class="lp-feature-icon"><svg class="icon"><use href="#i-camera"></use></svg></span>
-            <h3>Fotos de evolução</h3>
-            <p>Registre fotos por ângulo e compare com o tempo, sem precisar procurar no rolo da câmera.</p>
-          </article>
-          <article class="lp-feature-card">
-            <span class="lp-feature-icon"><svg class="icon"><use href="#i-file"></use></svg></span>
-            <h3>Relatório em PDF para o médico</h3>
-            <p>Leve para a consulta a adesão real ao tratamento conservador e a evolução dos seus sintomas.</p>
-          </article>
+        <div class="wrap">
+          <div class="lp-section-head">
+            <span>O que você registra</span>
+            <h2>Tudo que importa pro lipedema, num só app</h2>
+          </div>
+          <div class="lp-feature-grid">
+            <article class="lp-feature-card">
+              <span class="lp-feature-visual is-photo"><img src="imagem/dor-card.png" alt=""></span>
+              <h3>Dor, edema, sensibilidade e humor</h3>
+              <p>Registre todos os dias e veja gráficos reais de evolução, não uma sensação vaga.</p>
+            </article>
+            <article class="lp-feature-card">
+              <span class="lp-feature-visual"><svg class="icon"><use href="#i-calendar"></use></svg></span>
+              <h3>Ciclo menstrual</h3>
+              <p>Veja como fase folicular, ovulação e TPM se relacionam com seus sintomas ao longo do tempo.</p>
+            </article>
+            <article class="lp-feature-card">
+              <span class="lp-feature-visual"><svg class="icon"><use href="#i-check"></use></svg></span>
+              <h3>Tratamentos e meia de compressão</h3>
+              <p>Acompanhe drenagem, fisioterapia, exercício e horas reais de uso da meia — e receba lembrete de quando trocar.</p>
+            </article>
+            <article class="lp-feature-card">
+              <span class="lp-feature-visual"><svg class="icon"><use href="#i-chart"></use></svg></span>
+              <h3>Peso e medidas por membro</h3>
+              <p>Coxas, panturrilhas e tornozelos separadamente — porque lipedema não afeta o corpo todo por igual.</p>
+            </article>
+            <article class="lp-feature-card">
+              <span class="lp-feature-visual"><svg class="icon"><use href="#i-camera"></use></svg></span>
+              <h3>Fotos de evolução</h3>
+              <p>Registre fotos por ângulo e compare com o tempo, sem precisar procurar no rolo da câmera.</p>
+            </article>
+            <article class="lp-feature-card">
+              <span class="lp-feature-visual"><svg class="icon"><use href="#i-file"></use></svg></span>
+              <h3>Relatório em PDF para o médico</h3>
+              <p>Leve para a consulta a adesão real ao tratamento conservador e a evolução dos seus sintomas.</p>
+            </article>
+          </div>
         </div>
       </section>
 
       <section class="lp-how" aria-label="Como funciona">
-        <h2>Como funciona</h2>
-        <div class="lp-how-steps">
-          <article>
-            <span class="lp-step-number">1</span>
-            <h3>Crie sua conta</h3>
-            <p>Leva menos de um minuto. Só e-mail e senha.</p>
-          </article>
-          <article>
-            <span class="lp-step-number">2</span>
-            <h3>Registre no seu dia a dia</h3>
-            <p>Sintomas, tratamentos, ciclo, peso — no seu ritmo, sem burocracia.</p>
-          </article>
-          <article>
-            <span class="lp-step-number">3</span>
-            <h3>Acompanhe os padrões</h3>
-            <p>O app cruza seus próprios dados e mostra o que está mudando — pra você e pra quem te acompanha na saúde.</p>
-          </article>
+        <div class="wrap">
+          <div class="lp-section-head">
+            <span>Em 3 passos</span>
+            <h2>Como funciona</h2>
+          </div>
+          <div class="lp-how-steps">
+            <article class="lp-step">
+              <span class="lp-step-number">1</span>
+              <h3>Registro rápido</h3>
+              <p>Aponte sua dor, edema e sensibilidade num painel simples. Leva menos de 2 minutos por dia.</p>
+            </article>
+            <article class="lp-step">
+              <span class="lp-step-number">2</span>
+              <h3>Cruzamento com o ciclo</h3>
+              <p>O app relaciona seus sintomas com a fase do seu ciclo menstrual automaticamente — sem planilha, sem caderno.</p>
+            </article>
+            <article class="lp-step">
+              <span class="lp-step-number">3</span>
+              <h3>Padrão na tela</h3>
+              <p>Veja em quais dias e fases seus sintomas costumam piorar — e leve isso, em PDF, pra sua próxima consulta.</p>
+            </article>
+          </div>
         </div>
       </section>
 
       <section class="lp-mission">
-        <span class="lp-feature-icon"><svg class="icon"><use href="#i-lock"></use></svg></span>
-        <h2>Seus dados são seus</h2>
-        <p>O Radar Lipedema está em fase de lançamento: preferimos ser honestos sobre isso a inventar números ou depoimentos que não existem ainda. O que existe de verdade: seus registros ficam salvos com segurança, você pode exportar seus dados a qualquer momento e apagar sua conta e tudo relacionado a ela quando quiser, direto pelo app.</p>
+        <div class="wrap">
+          <div class="lp-mission-art">
+            <img src="imagem/imagem/imagem 02.png" alt="Mascote do Radar Lipedema">
+          </div>
+          <div>
+            <h2>Seus dados são seus</h2>
+            <p>O Radar Lipedema está em fase de lançamento: preferimos ser honestas sobre isso a inventar números ou depoimentos que não existem ainda. O que existe de verdade: seus registros ficam salvos com segurança, você pode exportar seus dados a qualquer momento e apagar sua conta e tudo relacionado a ela quando quiser, direto pelo app.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="lp-faq" aria-label="Perguntas frequentes">
+        <div class="wrap">
+          <div class="lp-section-head">
+            <span>Tire suas dúvidas</span>
+            <h2>Perguntas frequentes</h2>
+          </div>
+          <div class="lp-faq-list">
+            <details>
+              <summary>Preciso ter experiência com aplicativos?</summary>
+              <p>Não. As telas são simples e visuais: sliders de 0 a 10, botões e listas de marcar — sem planilha, sem configuração complicada.</p>
+            </details>
+            <details>
+              <summary>Funciona no celular?</summary>
+              <p>Sim, direto do navegador do seu celular — não precisa baixar nada de loja de aplicativo. Você também pode adicionar o atalho à tela inicial, que passa a abrir como um app.</p>
+            </details>
+            <details>
+              <summary>E se meu ciclo for irregular?</summary>
+              <p>O app se adapta: ele foca na relação entre os dias de sangramento que você registra e os seus sintomas, não em um calendário fixo.</p>
+            </details>
+            <details>
+              <summary>Funciona pra quem toma anticoncepcional?</summary>
+              <p>Sim. Mesmo com o ciclo regulado por hormônio sintético, seus sintomas físicos continuam sendo registrados e cruzados normalmente.</p>
+            </details>
+            <details>
+              <summary>Quanto tempo leva pra ver um padrão?</summary>
+              <p>A partir do segundo registro o app já compara tendências. Quanto mais dias você registra, mais claro fica o padrão dos seus sintomas.</p>
+            </details>
+            <details>
+              <summary>Meus dados de saúde ficam seguros?</summary>
+              <p>Sim. Ficam salvos com segurança na sua conta, você pode exportar tudo quando quiser e apagar sua conta e todos os dados permanentemente, direto pelo app.</p>
+            </details>
+          </div>
+        </div>
       </section>
 
       <section class="lp-final-cta">
-        <h2>Comece a entender seu corpo hoje</h2>
-        <a class="lp-cta-primary" data-cta href="https://app.radarlipedema.com.br">Criar minha conta</a>
+        <h2>O controle está nas suas mãos</h2>
+        <p class="lp-final-cta-sub">Pare de tentar adivinhar o que o seu corpo vai fazer amanhã.</p>
+        <a class="lp-cta-primary" data-cta href="https://app.radarlipedema.com.br">Quero entender meu inchaço</a>
       </section>
     </main>
 
