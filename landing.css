@@ -1042,14 +1042,14 @@ a {
 }
 
 .lp-footer-brand img {
-  height: 34px;
+  height: 42px;
   width: auto;
   max-width: 100%;
   object-fit: contain;
 }
 
 .lp-footer-brand img:first-child {
-  height: 40px;
+  height: 48px;
 }
 
 @media (min-width: 760px) {
@@ -1060,11 +1060,11 @@ a {
   }
 
   .lp-footer-brand img {
-    height: 46px;
+    height: 54px;
   }
 
   .lp-footer-brand img:first-child {
-    height: 54px;
+    height: 62px;
   }
 }
 
