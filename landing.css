@@ -695,7 +695,7 @@ a {
 
 .lp-mission-art img {
   width: 100%;
-  max-width: 220px;
+  max-width: 320px;
   margin: 0 auto;
 }
 
@@ -713,7 +713,7 @@ a {
 
 @media (min-width: 760px) {
   .lp-mission .wrap {
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 300px 1fr;
   }
 }
 
