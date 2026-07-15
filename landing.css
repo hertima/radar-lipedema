@@ -245,7 +245,7 @@ a {
   position: relative;
   justify-self: center;
   width: 100%;
-  max-width: 340px;
+  max-width: 270px;
 }
 
 .lp-hero-art-wide {
@@ -833,7 +833,7 @@ a {
 
   .lp-hero-art {
     align-self: end;
-    max-width: 320px;
+    max-width: 260px;
   }
 
   .lp-hero-art-wide {
