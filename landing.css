@@ -413,10 +413,9 @@ a {
 }
 
 .lp-section-mascot {
-  width: 160px;
-  height: 160px;
-  object-fit: contain;
-  margin: 0 0 8px;
+  width: auto;
+  height: 220px;
+  margin: 0;
 }
 
 .lp-section-head {
