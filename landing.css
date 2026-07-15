@@ -1049,20 +1049,15 @@ a {
 }
 
 .lp-footer-brand img:first-child {
-  flex-grow: 3;
+  flex-grow: 4;
 }
 
 .lp-footer-guarantee {
-  flex-grow: 1;
+  flex-grow: 1.4;
 }
 
-.lp-footer-secure,
-.lp-footer-ssl {
-  flex-grow: 2;
-}
-
-.lp-footer-ssl {
-  border-radius: 6px;
+.lp-footer-secure {
+  flex-grow: 2.6;
 }
 
 @media (min-width: 760px) {
@@ -1077,19 +1072,15 @@ a {
   }
 
   .lp-footer-brand img:first-child {
-    width: 280px;
+    width: 320px;
   }
 
   .lp-footer-guarantee {
-    width: 64px;
+    width: 84px;
   }
 
   .lp-footer-secure {
-    width: 140px;
-  }
-
-  .lp-footer-ssl {
-    width: 120px;
+    width: 190px;
   }
 }
 
