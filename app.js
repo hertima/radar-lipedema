@@ -1817,19 +1817,30 @@ const registerPanels = {
           <p class="panel-question">Onde voc&ecirc; sente dor?</p>
           <div class="body-picker-card">
             <div class="pain-body-grid">
-              <figure class="pain-body-option active">
+              <figure class="pain-body-option active" data-body-view="Frente">
                 <img class="pain-body-map" src="imagem/radar-frente-card.png" alt="Mapa de dor na frente do corpo">
                 <figcaption>Frente</figcaption>
               </figure>
-              <figure class="pain-body-option">
+              <figure class="pain-body-option" data-body-view="Costas">
                 <img class="pain-body-map" src="imagem/radar-costas-card.png" alt="Mapa de dor nas costas do corpo">
                 <figcaption>Costas</figcaption>
               </figure>
             </div>
-            <button class="panel-button secondary edit-areas-button" type="button" data-panel-action="edit-pain-areas">
+            <button class="panel-button secondary edit-areas-button" type="button" data-toggle-areas="pain-areas">
               <svg class="icon"><use href="#i-edit"></use></svg>
-              Editar &aacute;reas
+              <span data-areas-toggle-label>Editar &aacute;reas</span>
             </button>
+            <div class="body-areas-checklist" data-areas-list="pain-areas" hidden>
+              <label><input type="checkbox" name="areaCoxaEsquerda"> Coxa esquerda</label>
+              <label><input type="checkbox" name="areaCoxaDireita"> Coxa direita</label>
+              <label><input type="checkbox" name="areaPanturrilhaEsquerda"> Panturrilha esquerda</label>
+              <label><input type="checkbox" name="areaPanturrilhaDireita"> Panturrilha direita</label>
+              <label><input type="checkbox" name="areaTornozeloEsquerdo"> Tornozelo esquerdo</label>
+              <label><input type="checkbox" name="areaTornozeloDireito"> Tornozelo direito</label>
+              <label><input type="checkbox" name="areaQuadril"> Quadril</label>
+              <label><input type="checkbox" name="areaBracoEsquerdo"> Bra&ccedil;o esquerdo</label>
+              <label><input type="checkbox" name="areaBracoDireito"> Bra&ccedil;o direito</label>
+            </div>
           </div>
 
           <label class="settings-field pain-note-field"><span>Observa&ccedil;&otilde;es <small>(opcional)</small></span>
@@ -1859,19 +1870,30 @@ const registerPanels = {
           <p class="panel-question">Onde voc&ecirc; sente edema?</p>
           <div class="body-picker-card">
             <div class="pain-body-grid">
-              <figure class="pain-body-option active">
+              <figure class="pain-body-option active" data-body-view="Frente">
                 <img class="pain-body-map" src="imagem/radar-frente-card.png" alt="Mapa de edema na frente do corpo">
                 <figcaption>Frente</figcaption>
               </figure>
-              <figure class="pain-body-option">
+              <figure class="pain-body-option" data-body-view="Costas">
                 <img class="pain-body-map" src="imagem/radar-costas-card.png" alt="Mapa de edema nas costas do corpo">
                 <figcaption>Costas</figcaption>
               </figure>
             </div>
-            <button class="panel-button secondary edit-areas-button" type="button" data-panel-action="edit-edema-areas">
+            <button class="panel-button secondary edit-areas-button" type="button" data-toggle-areas="edema-areas">
               <svg class="icon"><use href="#i-edit"></use></svg>
-              Editar &aacute;reas
+              <span data-areas-toggle-label>Editar &aacute;reas</span>
             </button>
+            <div class="body-areas-checklist" data-areas-list="edema-areas" hidden>
+              <label><input type="checkbox" name="areaCoxaEsquerda"> Coxa esquerda</label>
+              <label><input type="checkbox" name="areaCoxaDireita"> Coxa direita</label>
+              <label><input type="checkbox" name="areaPanturrilhaEsquerda"> Panturrilha esquerda</label>
+              <label><input type="checkbox" name="areaPanturrilhaDireita"> Panturrilha direita</label>
+              <label><input type="checkbox" name="areaTornozeloEsquerdo"> Tornozelo esquerdo</label>
+              <label><input type="checkbox" name="areaTornozeloDireito"> Tornozelo direito</label>
+              <label><input type="checkbox" name="areaQuadril"> Quadril</label>
+              <label><input type="checkbox" name="areaBracoEsquerdo"> Bra&ccedil;o esquerdo</label>
+              <label><input type="checkbox" name="areaBracoDireito"> Bra&ccedil;o direito</label>
+            </div>
           </div>
           <label class="settings-field pain-note-field"><span>Observa&ccedil;&otilde;es <small>(opcional)</small></span>
             <textarea placeholder="Observa&ccedil;&otilde;es sobre o edema de hoje"></textarea>
@@ -2591,6 +2613,26 @@ settingsPanelContent.addEventListener("click", (event) => {
     return;
   }
 
+  const bodyViewOption = event.target.closest("[data-body-view]");
+  if (bodyViewOption) {
+    bodyViewOption.parentElement.querySelectorAll("[data-body-view]").forEach((option) => {
+      option.classList.toggle("active", option === bodyViewOption);
+    });
+    return;
+  }
+
+  const areasToggle = event.target.closest("[data-toggle-areas]");
+  if (areasToggle) {
+    const list = settingsPanelContent.querySelector(`[data-areas-list="${areasToggle.dataset.toggleAreas}"]`);
+    const label = areasToggle.querySelector("[data-areas-toggle-label]");
+    if (list && label) {
+      const willShow = list.hidden;
+      list.hidden = !willShow;
+      label.textContent = willShow ? "Ocultar áreas" : "Editar áreas";
+    }
+    return;
+  }
+
   const verifyAction = event.target.closest("[data-verify-action]");
   if (verifyAction) {
     handleVerifyAction(verifyAction.dataset.verifyAction, verifyAction.dataset.verifyEmail);
@@ -2720,8 +2762,6 @@ settingsPanelContent.addEventListener("click", (event) => {
     faq: "FAQ aberta",
     contact: "Suporte aberto",
     tutorial: "Tutorial iniciado",
-    "edit-pain-areas": "\u00c1reas de dor editadas",
-    "edit-edema-areas": "\u00c1reas de edema editadas",
     "save-pain": "Dor registrada",
     "save-edema": "Edema registrado",
     "save-measures": "Medidas salvas",
