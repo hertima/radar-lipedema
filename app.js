@@ -1176,31 +1176,39 @@ function downloadFile(filename, mimeType, content) {
 
 function normalizeReportText(value) {
   return String(value)
-    .replace(/&aacute;/g, "a")
-    .replace(/&eacute;/g, "e")
-    .replace(/&iacute;/g, "i")
-    .replace(/&oacute;/g, "o")
-    .replace(/&uacute;/g, "u")
-    .replace(/&atilde;/g, "a")
-    .replace(/&ccedil;/g, "c")
-    .replace(/&ecirc;/g, "e")
-    .replace(/&otilde;/g, "o")
-    .replace(/&Aacute;/g, "A")
-    .replace(/&Eacute;/g, "E")
-    .replace(/&Iacute;/g, "I")
-    .replace(/&Oacute;/g, "O")
-    .replace(/&Uacute;/g, "U")
-    .replace(/&Atilde;/g, "A")
-    .replace(/&Ccedil;/g, "C")
-    .replace(/&Ecirc;/g, "E")
-    .replace(/&Otilde;/g, "O")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\x20-\x7E]/g, "");
+    .replace(/&aacute;/g, "\u00e1")
+    .replace(/&eacute;/g, "\u00e9")
+    .replace(/&iacute;/g, "\u00ed")
+    .replace(/&oacute;/g, "\u00f3")
+    .replace(/&uacute;/g, "\u00fa")
+    .replace(/&atilde;/g, "\u00e3")
+    .replace(/&ccedil;/g, "\u00e7")
+    .replace(/&ecirc;/g, "\u00ea")
+    .replace(/&otilde;/g, "\u00f5")
+    .replace(/&Aacute;/g, "\u00c1")
+    .replace(/&Eacute;/g, "\u00c9")
+    .replace(/&Iacute;/g, "\u00cd")
+    .replace(/&Oacute;/g, "\u00d3")
+    .replace(/&Uacute;/g, "\u00da")
+    .replace(/&Atilde;/g, "\u00c3")
+    .replace(/&Ccedil;/g, "\u00c7")
+    .replace(/&Ecirc;/g, "\u00ca")
+    .replace(/&Otilde;/g, "\u00d5")
+    .split("")
+    .map((char) => (char.charCodeAt(0) <= 0xff ? char : "?"))
+    .join("");
 }
 
 function escapePdfText(value) {
   return normalizeReportText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
+function pdfLatin1Bytes(text) {
+  const bytes = new Uint8Array(text.length);
+  for (let i = 0; i < text.length; i += 1) {
+    bytes[i] = text.charCodeAt(i) & 0xff;
+  }
+  return bytes;
 }
 
 
@@ -1260,14 +1268,14 @@ function createPremiumReportPdf() {
   commands.push(pdfRect(0, 748, pageWidth, 10, pink));
   commands.push(pdfRect(412, 748, 183, 94, [0.89, 0.78, 1.0]));
   commands.push(pdfText("Radar Lipedema", 42, 807, 24, purple, "F2"));
-  commands.push(pdfText("Relatorio Premium", 42, 784, 15, ink, "F2"));
+  commands.push(pdfText("Relatório Premium", 42, 784, 15, ink, "F2"));
   commands.push(pdfText(`Gerado em ${data.generatedAt}`, 42, 765, 10, muted));
   commands.push(pdfText(`${scoreLabel}`, 438, 800, 34, ink, "F2"));
   commands.push(pdfText("/100", 492, 802, 13, muted, "F2"));
   commands.push(pdfText(data.status, 440, 780, 13, purple, "F2"));
 
-  commands.push(pdfText("Score de evolucao", 42, 719, 15, ink, "F2"));
-  commands.push(pdfText("Uma leitura consolidada dos seus registros reais de sintomas, habitos, tratamentos e fotos.", 42, 700, 10, muted));
+  commands.push(pdfText("Score de evolução", 42, 719, 15, ink, "F2"));
+  commands.push(pdfText("Uma leitura consolidada dos seus registros reais de sintomas, hábitos, tratamentos e fotos.", 42, 700, 10, muted));
   commands.push(pdfRect(42, 681, 510, 10, [0.93, 0.90, 0.96]));
   commands.push(pdfRect(42, 681, Math.round(510 * ((data.score || 0) / 100)), 10, pink));
 
@@ -1286,9 +1294,9 @@ function createPremiumReportPdf() {
     commands.push(pdfText(String(value), x + 204, y + 18, 14, purple, "F2"));
   });
 
-  commands.push(pdfText("Comparativo entre periodos", 42, 414, 15, ink, "F2"));
+  commands.push(pdfText("Comparativo entre períodos", 42, 414, 15, ink, "F2"));
   commands.push(pdfRect(42, 390, 510, 24, purple));
-  ["Periodo", "Dor", "Edema", "Sens.", "Humor"].forEach((title, index) => {
+  ["Período", "Dor", "Edema", "Sens.", "Humor"].forEach((title, index) => {
     const x = [54, 254, 320, 386, 452][index];
     commands.push(pdfText(title, x, 398, 10, [1, 1, 1], "F2"));
   });
@@ -1321,8 +1329,8 @@ function createPremiumReportPdf() {
   });
 
   commands.push(pdfRect(42, 38, 510, 38, [0.98, 0.95, 1.0], line));
-  commands.push(pdfText("Observacao", 58, 60, 10, purple, "F2"));
-  commands.push(pdfText("Este relatorio apoia acompanhamento e nao substitui avaliacao profissional.", 58, 47, 9, muted));
+  commands.push(pdfText("Observação", 58, 60, 10, purple, "F2"));
+  commands.push(pdfText("Este relatório apoia acompanhamento e não substitui avaliação profissional.", 58, 47, 9, muted));
   commands.push(pdfText(`Total analisado: ${data.totalRecords} registros`, 420, 23, 9, muted));
 
   return buildPdfDocument(commands, pageWidth, pageHeight);
@@ -1334,8 +1342,8 @@ function buildPdfDocument(commands, pageWidth, pageHeight) {
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
     `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
   ];
   let pdf = "%PDF-1.4\n";
@@ -1353,7 +1361,7 @@ function buildPdfDocument(commands, pageWidth, pageHeight) {
   });
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
 
-  return new Blob([pdf], { type: "application/pdf" });
+  return new Blob([pdfLatin1Bytes(pdf)], { type: "application/pdf" });
 }
 
 function createClinicalReportPdf() {
@@ -1373,24 +1381,24 @@ function createClinicalReportPdf() {
   commands.push(pdfRect(0, 762, pageWidth, 80, lavender));
   commands.push(pdfRect(0, 762, pageWidth, 10, purple));
   commands.push(pdfText("Radar Lipedema", 42, 807, 22, purple, "F2"));
-  commands.push(pdfText("Relatorio para acompanhamento medico", 42, 786, 13, ink, "F2"));
+  commands.push(pdfText("Relatório para acompanhamento médico", 42, 786, 13, ink, "F2"));
   commands.push(pdfText(`Gerado em ${data.generatedAt}`, 42, 769, 9, muted));
 
   commands.push(pdfText("Dados da paciente", 42, 732, 14, ink, "F2"));
   commands.push(pdfRect(42, 664, 510, 56, [1, 1, 1], line));
-  commands.push(pdfText(`Nome: ${currentProfile?.name || "Nao informado"}`, 56, 700, 10, ink));
-  commands.push(pdfText(`Estagio: ${currentProfile?.lipedemaStage ? `Estagio ${currentProfile.lipedemaStage}` : "Nao informado"}`, 56, 685, 10, ink));
-  commands.push(pdfText(`Tipo: ${currentProfile?.lipedemaType ? `Tipo ${currentProfile.lipedemaType}` : "Nao informado"}`, 56, 670, 10, ink));
+  commands.push(pdfText(`Nome: ${currentProfile?.name || "Não informado"}`, 56, 700, 10, ink));
+  commands.push(pdfText(`Estágio: ${currentProfile?.lipedemaStage ? `Estágio ${currentProfile.lipedemaStage}` : "Não informado"}`, 56, 685, 10, ink));
+  commands.push(pdfText(`Tipo: ${currentProfile?.lipedemaType ? `Tipo ${currentProfile.lipedemaType}` : "Não informado"}`, 56, 670, 10, ink));
 
-  commands.push(pdfText("Aderencia ao tratamento conservador", 42, 630, 14, ink, "F2"));
-  commands.push(pdfText(`Baseado em ${adherence.totalEntries} registro(s) de tratamento salvos no periodo.`, 42, 611, 9, muted));
+  commands.push(pdfText("Aderência ao tratamento conservador", 42, 630, 14, ink, "F2"));
+  commands.push(pdfText(`Baseado em ${adherence.totalEntries} registro(s) de tratamento salvos no período.`, 42, 611, 9, muted));
 
   const adherenceRows = [
-    ["Drenagem linfatica", pct(adherence.drenagem)],
+    ["Drenagem linfática", pct(adherence.drenagem)],
     ["Fisioterapia", pct(adherence.fisioterapia)],
-    ["Exercicio", pct(adherence.exercicio)],
-    ["Uso medio da meia compressiva", adherence.avgGarmentHours === null ? "Sem registros" : `${adherence.avgGarmentHours} h/dia`],
-    ["Classe de compressao", currentProfile?.garmentCompressionClass || "Nao informado"],
+    ["Exercício", pct(adherence.exercicio)],
+    ["Uso médio da meia compressiva", adherence.avgGarmentHours === null ? "Sem registros" : `${adherence.avgGarmentHours} h/dia`],
+    ["Classe de compressão", currentProfile?.garmentCompressionClass || "Não informado"],
   ];
   adherenceRows.forEach(([label, value], index) => {
     const y = 585 - index * 30;
@@ -1399,9 +1407,9 @@ function createClinicalReportPdf() {
     commands.push(pdfText(String(value), 470, y + 15, 10, purple, "F2"));
   });
 
-  commands.push(pdfText("Evolucao dos sintomas", 42, 400, 14, ink, "F2"));
+  commands.push(pdfText("Evolução dos sintomas", 42, 400, 14, ink, "F2"));
   commands.push(pdfRect(42, 350, 510, 40, purple));
-  ["Periodo", "Dor", "Edema", "Sens.", "Humor"].forEach((title, index) => {
+  ["Período", "Dor", "Edema", "Sens.", "Humor"].forEach((title, index) => {
     const x = [54, 254, 320, 386, 452][index];
     commands.push(pdfText(title, x, 373, 10, [1, 1, 1], "F2"));
   });
@@ -1423,9 +1431,9 @@ function createClinicalReportPdf() {
   });
 
   commands.push(pdfRect(42, 60, 510, 44, [0.98, 0.95, 1.0], line));
-  commands.push(pdfText("Observacao", 58, 88, 10, purple, "F2"));
-  commands.push(pdfText("Relatorio gerado a partir de registros da propria paciente no app Radar", 58, 75, 9, muted));
-  commands.push(pdfText("Lipedema. Nao substitui avaliacao clinica presencial.", 58, 63, 9, muted));
+  commands.push(pdfText("Observação", 58, 88, 10, purple, "F2"));
+  commands.push(pdfText("Relatório gerado a partir de registros da própria paciente no app Radar", 58, 75, 9, muted));
+  commands.push(pdfText("Lipedema. Não substitui avaliação clínica presencial.", 58, 63, 9, muted));
   commands.push(pdfText(`Total de registros analisados: ${data.totalRecords}`, 372, 23, 9, muted));
 
   return buildPdfDocument(commands, pageWidth, pageHeight);
