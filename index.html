@@ -153,7 +153,7 @@
                 </button>
                 <div>
                   <h2 id="home-title">Ol&aacute;, Ana</h2>
-                  <p>Plano Premium</p>
+                  <p data-profile-goal>Entender padr&otilde;es do ciclo</p>
                 </div>
               </div>
               <button class="icon-button" type="button" aria-label="Lembretes" data-toast="Lembrete para 20:00 ativado">
@@ -176,8 +176,8 @@
             <article class="hero-card">
               <div>
                 <p class="mini-label">Sequ&ecirc;ncia atual</p>
-                <strong>12 dias</strong>
-                <span>&Uacute;ltimo trabalho!</span>
+                <strong data-streak-days>0 dias</strong>
+                <span data-streak-note>Registre hoje para come&ccedil;ar</span>
               </div>
               <img src="imagem/imagem/havatar 01.png" alt="Mascote da sequencia">
             </article>
@@ -233,13 +233,13 @@
             </article>
 
             <section class="achievement-strip" aria-label="Conquistas recentes">
-              <button type="button" data-toast="Conquista: Primeiro Registro">
+              <button type="button" data-achievement="primeiro-registro" data-toast-unlocked="Conquista: Primeiro Registro" data-toast-locked="Fa&ccedil;a seu primeiro registro para desbloquear">
                 <img src="imagem/imagem/primeiro registro.png" alt="Primeiro registro">
               </button>
-              <button type="button" data-toast="Conquista: 7 Dias Seguidos">
+              <button type="button" data-achievement="sete-dias" data-toast-unlocked="Conquista: 7 Dias Seguidos" data-toast-locked="Registre 7 dias seguidos para desbloquear">
                 <img src="imagem/imagem/7 dias seguido.png" alt="Sete dias seguidos">
               </button>
-              <button type="button" data-toast="Conquista: Exploradora">
+              <button type="button" data-achievement="exploradora" data-toast-unlocked="Conquista: Exploradora" data-toast-locked="Fa&ccedil;a 10 registros para desbloquear">
                 <img src="imagem/imagem/exploradora 10 registros.png" alt="Exploradora">
               </button>
             </section>
@@ -539,9 +539,9 @@
 
             <article class="level-card">
               <div>
-                <strong>N&iacute;vel 7</strong>
-                <div class="xp-bar"><i></i></div>
-                <span>850 / 1200 XP</span>
+                <strong data-level>N&iacute;vel 1</strong>
+                <div class="xp-bar" data-xp-bar><i></i></div>
+                <span data-xp-label>0 / 200 XP</span>
               </div>
               <img src="imagem/imagem/imagem 02.png" alt="Mascote do nivel">
             </article>
@@ -549,17 +549,17 @@
             <section class="stats-grid" aria-label="Gamificacao">
               <article>
                 <img src="imagem/imagem/7 dias seguido.png" alt="">
-                <strong>12</strong>
+                <strong data-streak-count>0</strong>
                 <span>Sequ&ecirc;ncia</span>
               </article>
               <article>
                 <svg class="icon"><use href="#i-star"></use></svg>
-                <strong>850</strong>
+                <strong data-xp-value>0</strong>
                 <span>XP</span>
               </article>
               <article>
                 <img src="imagem/imagem/mestra do auto conhecimento.png" alt="">
-                <strong>5</strong>
+                <strong data-achievement-count>0</strong>
                 <span>Conquistas</span>
               </article>
             </section>
@@ -582,13 +582,13 @@
             </section>
 
             <section class="achievement-strip settings-achievements" aria-label="Conquistas">
-              <button type="button" data-toast="Conquista: Fase L&uacute;tea Completa">
+              <button type="button" data-achievement="fase-lutea" data-toast-unlocked="Conquista: Fase L&uacute;tea Completa" data-toast-locked="Ainda n&atilde;o dispon&iacute;vel">
                 <img src="imagem/imagem/fase luteo completa.png" alt="Fase lutea completa">
               </button>
-              <button type="button" data-toast="Conquista: Padr&otilde;es Descobertos">
+              <button type="button" data-achievement="padroes" data-toast-unlocked="Conquista: Padr&otilde;es Descobertos" data-toast-locked="Continue registrando para desbloquear">
                 <img src="imagem/imagem/padroes descoberto.png" alt="Padroes descobertos">
               </button>
-              <button type="button" data-toast="Conquista: Mestre do Autoconhecimento">
+              <button type="button" data-achievement="mestre" data-toast-unlocked="Conquista: Mestre do Autoconhecimento" data-toast-locked="Fa&ccedil;a 30 registros para desbloquear">
                 <img src="imagem/imagem/mestra do auto conhecimento.png" alt="Mestre do autoconhecimento">
               </button>
             </section>

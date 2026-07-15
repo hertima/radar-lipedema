@@ -483,6 +483,84 @@ function buildPremiumDataset() {
   };
 }
 
+function computeStreak(history) {
+  if (!history.length) {
+    return 0;
+  }
+
+  const oneDay = 86_400_000;
+  const registeredDays = new Set(
+    history.map((record) => {
+      const day = new Date(record.date);
+      day.setHours(0, 0, 0, 0);
+      return day.getTime();
+    })
+  );
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let cursor = today.getTime();
+  if (!registeredDays.has(cursor)) {
+    cursor -= oneDay;
+  }
+
+  let streak = 0;
+  while (registeredDays.has(cursor)) {
+    streak += 1;
+    cursor -= oneDay;
+  }
+
+  return streak;
+}
+
+function renderGamification(history) {
+  const streak = computeStreak(history);
+  const xp = recordHistory.length * 10;
+  const xpPerLevel = 200;
+  const level = Math.floor(xp / xpPerLevel) + 1;
+  const xpIntoLevel = xp % xpPerLevel;
+  const insightCount = computeInsights(history).length;
+
+  const achievements = {
+    "primeiro-registro": recordHistory.length >= 1,
+    "sete-dias": streak >= 7,
+    exploradora: recordHistory.length >= 10,
+    "fase-lutea": false,
+    padroes: insightCount >= 3,
+    mestre: recordHistory.length >= 30,
+  };
+  const unlockedCount = Object.values(achievements).filter(Boolean).length;
+
+  document.querySelectorAll("[data-streak-days]").forEach((el) => {
+    el.textContent = `${streak} dia${streak === 1 ? "" : "s"}`;
+  });
+  document.querySelectorAll("[data-streak-note]").forEach((el) => {
+    el.textContent = streak > 0 ? "Continue assim!" : "Registre hoje para começar";
+  });
+  document.querySelectorAll("[data-streak-count]").forEach((el) => {
+    el.textContent = streak;
+  });
+  document.querySelectorAll("[data-level]").forEach((el) => {
+    el.textContent = `Nível ${level}`;
+  });
+  document.querySelectorAll("[data-xp-bar]").forEach((el) => {
+    el.style.setProperty("--xp", `${Math.round((xpIntoLevel / xpPerLevel) * 100)}%`);
+  });
+  document.querySelectorAll("[data-xp-label]").forEach((el) => {
+    el.textContent = `${xpIntoLevel} / ${xpPerLevel} XP`;
+  });
+  document.querySelectorAll("[data-xp-value]").forEach((el) => {
+    el.textContent = xp;
+  });
+  document.querySelectorAll("[data-achievement-count]").forEach((el) => {
+    el.textContent = unlockedCount;
+  });
+  document.querySelectorAll("[data-achievement]").forEach((button) => {
+    const unlocked = Boolean(achievements[button.dataset.achievement]);
+    button.classList.toggle("locked", !unlocked);
+  });
+}
+
 function renderDynamicData() {
   const history = getDailyRegisters();
   renderHomeSnapshot(history[history.length - 1] || null);
@@ -492,6 +570,7 @@ function renderDynamicData() {
   renderDeepInsights(history);
   renderInsightsHero(history);
   renderRecentTrendCards(history);
+  renderGamification(history);
   updatePremiumSummaries();
 }
 
@@ -614,6 +693,12 @@ async function loadServerState() {
 
   if (data.profile?.name) {
     document.querySelector("#home-title").textContent = `Ol\u00e1, ${data.profile.name}`;
+  }
+
+  if (data.profile?.goal) {
+    document.querySelectorAll("[data-profile-goal]").forEach((el) => {
+      el.textContent = data.profile.goal;
+    });
   }
 
   if (data.profile?.photoDataUrl) {
@@ -1421,16 +1506,18 @@ const registerPanels = {
   measures: {
     title: "Registrar medidas",
     render() {
-      const measures = [
-        ["Coxa direita", "61,0"],
-        ["Coxa esquerda", "60,5"],
-        ["Joelho direito", "40,0"],
-        ["Joelho esquerdo", "39,5"],
-        ["Panturrilha direita", "37,2"],
-        ["Panturrilha esquerda", "36,8"],
-        ["Tornozelo direito", "23,0"],
-        ["Tornozelo esquerdo", "22,8"],
+      const measureLabels = [
+        "Coxa direita",
+        "Coxa esquerda",
+        "Joelho direito",
+        "Joelho esquerdo",
+        "Panturrilha direita",
+        "Panturrilha esquerda",
+        "Tornozelo direito",
+        "Tornozelo esquerdo",
       ];
+      const lastMeasures = [...recordHistory].reverse().find((record) => record.recordType === "save-measures");
+      const measures = measureLabels.map((label) => [label, lastMeasures?.payload?.fields?.[label] || ""]);
       return `
         <div class="smart-register-panel">
           <article class="register-data-card">
@@ -1444,7 +1531,7 @@ const registerPanels = {
             ${measures.map(([label, value]) => `
               <label class="measure-row">
                 <span>${label}</span>
-                <input inputmode="decimal" value="${value}">
+                <input inputmode="decimal" value="${value}" placeholder="0,0">
                 <small>cm</small>
               </label>
             `).join("")}
@@ -1457,16 +1544,26 @@ const registerPanels = {
   weight: {
     title: "Registrar peso",
     render() {
+      const weightHistory = recordHistory.filter((record) => record.recordType === "save-weight" && typeof record.payload?.weight === "number");
+      const lastWeight = weightHistory[0]?.payload?.weight ?? null;
+      const previousWeight = weightHistory[1]?.payload?.weight ?? null;
+      const currentValue = lastWeight ?? 60;
+      const delta = lastWeight !== null && previousWeight !== null ? +(lastWeight - previousWeight).toFixed(1) : null;
+      const deltaText =
+        delta === null
+          ? "Sem registro anterior para comparar"
+          : `${delta > 0 ? "+" : ""}${delta.toFixed(1).replace(".", ",")} kg vs último registro`;
+
       return `
         <div class="smart-register-panel weight-register-panel">
-          <article class="weight-value-card">
+          <article class="weight-value-card" data-weight-card data-value="${currentValue}">
             <span>Peso atual</span>
-            <strong>67,3 <small>kg</small></strong>
-            <p><b>-0,4 kg</b> vs ontem</p>
+            <strong data-weight-display>${lastWeight !== null ? lastWeight.toFixed(1).replace(".", ",") : "--"} <small>kg</small></strong>
+            <p><b data-weight-delta>${deltaText}</b></p>
           </article>
           <div class="weight-actions">
-            <button type="button" data-panel-action="weight-minus">-</button>
-            <button type="button" data-panel-action="weight-plus">+</button>
+            <button type="button" data-weight-step="-1">-</button>
+            <button type="button" data-weight-step="1">+</button>
           </div>
           <label class="settings-field pain-note-field"><span>Observa&ccedil;&otilde;es <small>(opcional)</small></span>
             <textarea placeholder="Algo mudou na rotina, alimenta&ccedil;&atilde;o ou reten&ccedil;&atilde;o?"></textarea>
@@ -1937,6 +2034,13 @@ document.querySelectorAll("[data-toast]").forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-achievement]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const message = button.classList.contains("locked") ? button.dataset.toastLocked : button.dataset.toastUnlocked;
+    showToast(message);
+  });
+});
+
 document.querySelectorAll("[data-settings-panel]").forEach((button) => {
   button.addEventListener("click", () => {
     openSettingsPanel(button.dataset.settingsPanel);
@@ -2075,6 +2179,16 @@ settingsPanelContent.addEventListener("click", (event) => {
     return;
   }
 
+  const weightStepButton = event.target.closest("[data-weight-step]");
+  if (weightStepButton) {
+    const card = document.querySelector("[data-weight-card]");
+    const direction = Number(weightStepButton.dataset.weightStep);
+    const nextValue = Math.max(30, Math.min(200, +(Number(card.dataset.value) + direction * 0.1).toFixed(1)));
+    card.dataset.value = String(nextValue);
+    card.querySelector("[data-weight-display]").innerHTML = `${nextValue.toFixed(1).replace(".", ",")} <small>kg</small>`;
+    return;
+  }
+
   const habitButton = event.target.closest("[data-habit-step]");
   if (habitButton) {
     const row = habitButton.closest("[data-habit-stepper]");
@@ -2142,8 +2256,6 @@ settingsPanelContent.addEventListener("click", (event) => {
     "save-edema": "Edema registrado",
     "save-measures": "Medidas salvas",
     "save-weight": "Peso registrado",
-    "weight-minus": "Peso ajustado",
-    "weight-plus": "Peso ajustado",
     "save-treatments": "Tratamentos salvos",
     "save-habits": "H\u00e1bitos salvos",
     "save-symptoms-extra": "Sintomas registrados",
@@ -2172,7 +2284,9 @@ settingsPanelContent.addEventListener("click", (event) => {
 
   showToast(messages[actionName] || "A\u00e7\u00e3o conclu\u00edda");
   if (actionName.startsWith("save-")) {
+    const extra = actionName === "save-weight" ? { weight: Number(document.querySelector("[data-weight-card]")?.dataset.value) } : {};
     saveRecordToServer(actionName, {
+      ...extra,
       fields: collectPanelData(),
       photos: Object.keys(photoSlotImages),
       savedAt: new Date().toISOString(),

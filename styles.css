@@ -725,6 +725,12 @@ h2 {
   border-radius: 16px;
   object-fit: cover;
   box-shadow: 0 10px 24px rgba(31, 14, 54, 0.08);
+  transition: filter 0.18s ease, opacity 0.18s ease;
+}
+
+.achievement-strip button.locked img {
+  filter: grayscale(1);
+  opacity: 0.45;
 }
 
 .tab-panel {
@@ -2673,7 +2679,7 @@ input[type="range"] {
 
 .xp-bar i {
   display: block;
-  width: 72%;
+  width: var(--xp, 0%);
   height: 100%;
   border-radius: inherit;
   background: #fff;
