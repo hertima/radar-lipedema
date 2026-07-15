@@ -1319,6 +1319,38 @@ function downloadJsonExport() {
   );
 }
 
+function formatBackupTimestamp(value) {
+  if (!value) {
+    return "Nenhum backup ainda";
+  }
+
+  return new Date(value).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+async function runBackup() {
+  downloadFile(
+    "radar-lipedema-backup.json",
+    "application/json",
+    JSON.stringify({ generatedAt: new Date().toISOString(), profile: currentProfile, records: recordHistory, photos: photoSlotImages }, null, 2)
+  );
+
+  const result = await apiRequest("/api/backup", { method: "POST" });
+  if (currentProfile && result?.lastBackupAt) {
+    currentProfile.lastBackupAt = result.lastBackupAt;
+  }
+
+  const status = settingsPanelContent.querySelector("[data-backup-status]");
+  if (status) {
+    status.textContent = formatBackupTimestamp(currentProfile?.lastBackupAt);
+  }
+}
+
 function downloadCsvExport() {
   const data = buildPremiumDataset();
   const periodRow = (label, period) => [
@@ -1449,32 +1481,32 @@ const settingsPanels = {
     content: `
       <div class="settings-form">
         <article class="settings-mini-card premium-panel">
-          <strong>Premium ativo</strong>
-          <p>Insights avan&ccedil;ados, relat&oacute;rios em PDF, comparativos e exporta&ccedil;&atilde;o de dados.</p>
+          <strong>Recursos liberados</strong>
+          <p>Insights avan&ccedil;ados, relat&oacute;rios em PDF, comparativos e exporta&ccedil;&atilde;o de dados est&atilde;o dispon&iacute;veis gratuitamente enquanto o app est&aacute; em lan&ccedil;amento.</p>
         </article>
         <div class="panel-list">
-          <div class="panel-row"><span>Status<small>Renova em 14/08/2026</small></span><strong>Ativo</strong></div>
-          <button type="button" data-panel-action="invoice">Ver recibo</button>
-          <button type="button" data-panel-action="manage-plan">Gerenciar assinatura</button>
+          <div class="panel-row"><span>Cobran&ccedil;a<small>Nenhuma assinatura paga ativa</small></span><strong>Grátis</strong></div>
         </div>
       </div>
     `,
   },
   backup: {
     title: "Backup e dados",
-    content: `
-      <div class="settings-form">
-        <article class="settings-mini-card">
-          <strong>&Uacute;ltimo backup</strong>
-          <p><span class="backup-status" data-backup-status>Hoje, 09:41</span></p>
-        </article>
-        <div class="settings-action-row">
-          <button class="panel-button" type="button" data-panel-action="run-backup">Fazer backup agora</button>
-          <button class="panel-button secondary" type="button" data-panel-action="export-csv">Exportar CSV</button>
-          <button class="panel-button secondary" type="button" data-panel-action="export-pdf">Exportar PDF</button>
+    render() {
+      return `
+        <div class="settings-form">
+          <article class="settings-mini-card">
+            <strong>Último backup</strong>
+            <p><span class="backup-status" data-backup-status>${formatBackupTimestamp(currentProfile?.lastBackupAt)}</span></p>
+          </article>
+          <div class="settings-action-row">
+            <button class="panel-button" type="button" data-panel-action="run-backup">Fazer backup agora</button>
+            <button class="panel-button secondary" type="button" data-panel-action="export-csv">Exportar CSV</button>
+            <button class="panel-button secondary" type="button" data-panel-action="export-pdf">Exportar PDF</button>
+          </div>
         </div>
-      </div>
-    `,
+      `;
+    },
   },
   privacy: {
     title: "Privacidade",
@@ -2350,8 +2382,6 @@ settingsPanelContent.addEventListener("click", (event) => {
     "save-cycle": "Prefer\u00eancias do ciclo salvas",
     "save-reminders": "Lembretes salvos",
     "save-goals": "Meta de sintomas salva",
-    invoice: "Recibo aberto",
-    "manage-plan": "Assinatura aberta",
     "run-backup": "Backup conclu\u00eddo agora",
     "export-csv": "CSV exportado",
     "export-json": "JSON exportado",
@@ -2375,10 +2405,7 @@ settingsPanelContent.addEventListener("click", (event) => {
   };
 
   if (actionName === "run-backup") {
-    const status = settingsPanelContent.querySelector("[data-backup-status]");
-    if (status) {
-      status.textContent = "Agora mesmo";
-    }
+    runBackup();
   }
 
   if (actionName === "export-pdf") {

@@ -289,6 +289,7 @@ app.post("/api/auth/verify-email", rateLimit("verify-email", 10, 10 * 60 * 1000)
   const profileResult = await pool.query(
     `select id, name, email, goal, photo_data_url as "photoDataUrl",
             cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
+            last_backup_at as "lastBackupAt",
             updated_at as "updatedAt"
        from profiles where id = $1`,
     [user.id]
@@ -344,6 +345,7 @@ app.get("/api/auth/me", asyncRoute(async (request, response) => {
   const result = await pool.query(
     `select id, name, email, goal, photo_data_url as "photoDataUrl",
             cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
+            last_backup_at as "lastBackupAt",
             updated_at as "updatedAt"
        from profiles where id = $1`,
     [userId]
@@ -415,6 +417,7 @@ app.get("/api/bootstrap", requireAuth, asyncRoute(async (request, response) => {
     pool.query(
       `select id, name, email, goal, photo_data_url as "photoDataUrl",
             cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
+            last_backup_at as "lastBackupAt",
             updated_at as "updatedAt"
          from profiles where id = $1`,
       [request.userId]
@@ -469,11 +472,22 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
      where id = $1
      returning id, name, email, goal, photo_data_url as "photoDataUrl",
                cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
+               last_backup_at as "lastBackupAt",
                updated_at as "updatedAt"`,
     [request.userId, name, email, goal, photoDataUrl, cycleLength, periodLength, lastPeriodStart]
   );
 
   response.json({ ok: true, profile: result.rows[0] });
+}));
+
+app.post("/api/backup", requireAuth, asyncRoute(async (request, response) => {
+  const result = await pool.query(
+    `update profiles set last_backup_at = now() where id = $1
+     returning last_backup_at as "lastBackupAt"`,
+    [request.userId]
+  );
+
+  response.json({ ok: true, lastBackupAt: result.rows[0]?.lastBackupAt });
 }));
 
 app.post("/api/records", requireAuth, asyncRoute(async (request, response) => {

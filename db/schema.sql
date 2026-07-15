@@ -38,6 +38,7 @@ create table if not exists profiles (
 alter table profiles add column if not exists cycle_length int not null default 28;
 alter table profiles add column if not exists period_length int not null default 5;
 alter table profiles add column if not exists last_period_start date;
+alter table profiles add column if not exists last_backup_at timestamptz;
 
 create table if not exists records (
   id bigserial primary key,
