@@ -1049,6 +1049,11 @@ a {
   width: 140px;
 }
 
+.lp-footer-ssl {
+  width: 120px;
+  border-radius: 8px;
+}
+
 .lp-footer nav {
   display: flex;
   gap: 22px;
