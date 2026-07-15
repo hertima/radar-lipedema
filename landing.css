@@ -152,10 +152,9 @@ a {
 }
 
 .lp-brand img {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  object-fit: cover;
+  width: auto;
+  height: 56px;
+  object-fit: contain;
 }
 
 .lp-nav-cta {
@@ -252,6 +251,13 @@ a {
   width: 100%;
   display: block;
   filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.28));
+}
+
+.lp-hero-mascot {
+  max-width: 320px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.25);
 }
 
 @media (prefers-reduced-motion: no-preference) {
