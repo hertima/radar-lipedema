@@ -227,21 +227,33 @@ a {
 }
 
 .lp-cta-primary {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   background: var(--pink);
   color: #fff;
   text-decoration: none;
+  text-align: center;
+  padding: 16px 20px;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+.lp-cta-main {
   font-family: "Inter", sans-serif;
-  font-weight: 700;
-  font-size: clamp(14px, 4.2vw, 18px);
-  white-space: nowrap;
+  font-weight: 800;
+  font-size: clamp(15px, 4.4vw, 18px);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  padding: 18px 26px;
-  border-radius: 999px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+}
+
+.lp-cta-sub {
+  font-family: "Inter", sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .lp-hero-art {
@@ -253,6 +265,11 @@ a {
 
 .lp-hero-art-wide {
   max-width: 480px;
+}
+
+.lp-cta-below-phone {
+  justify-self: center;
+  margin-top: 20px;
 }
 
 .lp-hero-shot {
@@ -843,6 +860,10 @@ a {
   .lp-hero-art {
     align-self: end;
     max-width: 260px;
+  }
+
+  .lp-cta-below-phone {
+    grid-column: 2;
   }
 
   .lp-hero-art-wide {
