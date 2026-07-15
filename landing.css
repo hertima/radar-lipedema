@@ -1052,6 +1052,10 @@ a {
   height: 76px;
 }
 
+.lp-footer-brand img.lp-footer-secure {
+  height: 72px;
+}
+
 @media (min-width: 760px) {
   .lp-footer-brand {
     justify-content: flex-start;
