@@ -39,6 +39,10 @@ alter table profiles add column if not exists cycle_length int not null default 
 alter table profiles add column if not exists period_length int not null default 5;
 alter table profiles add column if not exists last_period_start date;
 alter table profiles add column if not exists last_backup_at timestamptz;
+alter table profiles add column if not exists lipedema_stage text;
+alter table profiles add column if not exists lipedema_type text;
+alter table profiles add column if not exists garment_compression_class text;
+alter table profiles add column if not exists garment_last_replaced_at date;
 
 create table if not exists records (
   id bigserial primary key,

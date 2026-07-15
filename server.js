@@ -290,6 +290,8 @@ app.post("/api/auth/verify-email", rateLimit("verify-email", 10, 10 * 60 * 1000)
     `select id, name, email, goal, photo_data_url as "photoDataUrl",
             cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
             last_backup_at as "lastBackupAt",
+            lipedema_stage as "lipedemaStage", lipedema_type as "lipedemaType",
+            garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
             updated_at as "updatedAt"
        from profiles where id = $1`,
     [user.id]
@@ -346,6 +348,8 @@ app.get("/api/auth/me", asyncRoute(async (request, response) => {
     `select id, name, email, goal, photo_data_url as "photoDataUrl",
             cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
             last_backup_at as "lastBackupAt",
+            lipedema_stage as "lipedemaStage", lipedema_type as "lipedemaType",
+            garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
             updated_at as "updatedAt"
        from profiles where id = $1`,
     [userId]
@@ -418,6 +422,8 @@ app.get("/api/bootstrap", requireAuth, asyncRoute(async (request, response) => {
       `select id, name, email, goal, photo_data_url as "photoDataUrl",
             cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
             last_backup_at as "lastBackupAt",
+            lipedema_stage as "lipedemaStage", lipedema_type as "lipedemaType",
+            garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
             updated_at as "updatedAt"
          from profiles where id = $1`,
       [request.userId]
@@ -459,6 +465,25 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
     }
   }
 
+  const validStages = ["1", "2", "3"];
+  const lipedemaStage = validStages.includes(request.body.lipedemaStage) ? request.body.lipedemaStage : null;
+
+  const validTypes = ["I", "II", "III", "IV", "V"];
+  const lipedemaType = validTypes.includes(request.body.lipedemaType) ? request.body.lipedemaType : null;
+
+  const validCompressionClasses = ["15-20 mmHg", "20-30 mmHg", "30-40 mmHg", "40-50 mmHg"];
+  const garmentCompressionClass = validCompressionClasses.includes(request.body.garmentCompressionClass)
+    ? request.body.garmentCompressionClass
+    : null;
+
+  let garmentLastReplacedAt = null;
+  if (typeof request.body.garmentLastReplacedAt === "string" && /^\d{4}-\d{2}-\d{2}$/.test(request.body.garmentLastReplacedAt)) {
+    const parsed = new Date(`${request.body.garmentLastReplacedAt}T00:00:00Z`);
+    if (!Number.isNaN(parsed.getTime()) && parsed.getTime() <= Date.now()) {
+      garmentLastReplacedAt = request.body.garmentLastReplacedAt;
+    }
+  }
+
   const result = await pool.query(
     `update profiles set
        name = coalesce(nullif($2, ''), name),
@@ -468,16 +493,63 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
        cycle_length = coalesce($6, cycle_length),
        period_length = coalesce($7, period_length),
        last_period_start = coalesce($8, last_period_start),
+       lipedema_stage = coalesce($9, lipedema_stage),
+       lipedema_type = coalesce($10, lipedema_type),
+       garment_compression_class = coalesce($11, garment_compression_class),
+       garment_last_replaced_at = coalesce($12, garment_last_replaced_at),
        updated_at = now()
      where id = $1
      returning id, name, email, goal, photo_data_url as "photoDataUrl",
                cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
                last_backup_at as "lastBackupAt",
+               lipedema_stage as "lipedemaStage", lipedema_type as "lipedemaType",
+               garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
                updated_at as "updatedAt"`,
-    [request.userId, name, email, goal, photoDataUrl, cycleLength, periodLength, lastPeriodStart]
+    [request.userId, name, email, goal, photoDataUrl, cycleLength, periodLength, lastPeriodStart, lipedemaStage, lipedemaType, garmentCompressionClass, garmentLastReplacedAt]
   );
 
   response.json({ ok: true, profile: result.rows[0] });
+}));
+
+app.post("/api/auth/change-password", requireAuth, rateLimit("change-password", 10, 15 * 60 * 1000), asyncRoute(async (request, response) => {
+  const currentPassword = String(request.body.currentPassword || "");
+  const newPassword = String(request.body.newPassword || "");
+
+  if (newPassword.length < 6) {
+    response.status(400).json({ ok: false, error: "A nova senha precisa ter pelo menos 6 caracteres." });
+    return;
+  }
+
+  const result = await pool.query("select password_hash from users where id = $1", [request.userId]);
+  const user = result.rows[0];
+  const valid = user && (await bcrypt.compare(currentPassword, user.password_hash));
+
+  if (!valid) {
+    response.status(401).json({ ok: false, error: "Senha atual incorreta." });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await pool.query("update users set password_hash = $1 where id = $2", [passwordHash, request.userId]);
+
+  response.json({ ok: true });
+}));
+
+app.delete("/api/account", requireAuth, rateLimit("delete-account", 10, 15 * 60 * 1000), asyncRoute(async (request, response) => {
+  const password = String(request.body.password || "");
+
+  const result = await pool.query("select password_hash from users where id = $1", [request.userId]);
+  const user = result.rows[0];
+  const valid = user && (await bcrypt.compare(password, user.password_hash));
+
+  if (!valid) {
+    response.status(401).json({ ok: false, error: "Senha incorreta." });
+    return;
+  }
+
+  await pool.query("delete from users where id = $1", [request.userId]);
+  response.clearCookie(sessionCookieName);
+  response.json({ ok: true });
 }));
 
 app.post("/api/backup", requireAuth, asyncRoute(async (request, response) => {

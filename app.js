@@ -283,7 +283,52 @@ function computeInsights(history) {
     text: `É o sintoma com maior média entre os seus registros (${overallAverages[worstKey].toFixed(1)}/10).`,
   });
 
-  return insights.slice(0, 3);
+  const bruisingInsight = computeBruisingInsight();
+  if (bruisingInsight) {
+    insights.push(bruisingInsight);
+  }
+
+  return insights.slice(0, 4);
+}
+
+function computeBruisingInsight() {
+  const entries = recordHistory.filter((record) => record.recordType === "save-symptoms-extra");
+  if (entries.length < 3) {
+    return null;
+  }
+
+  const withBruising = entries.filter((entry) => entry.payload?.fields?.hasBruising === true).length;
+  if (!withBruising) {
+    return null;
+  }
+
+  const percent = Math.round((withBruising / entries.length) * 100);
+  return {
+    color: "orange",
+    label: "Hematomas",
+    text: `Presentes em ${percent}% dos seus últimos ${entries.length} registros de sintomas extras.`,
+  };
+}
+
+function computeTreatmentAdherence() {
+  const entries = recordHistory.filter((record) => record.recordType === "save-treatments");
+  const total = entries.length;
+  const percentOf = (predicate) => (total ? Math.round((entries.filter(predicate).length / total) * 100) : null);
+
+  const garmentHoursValues = entries
+    .map((entry) => Number(entry.payload?.fields?.garmentHours))
+    .filter((value) => Number.isFinite(value));
+  const avgGarmentHours = garmentHoursValues.length
+    ? +(garmentHoursValues.reduce((sum, value) => sum + value, 0) / garmentHoursValues.length).toFixed(1)
+    : null;
+
+  return {
+    totalEntries: total,
+    drenagem: percentOf((entry) => entry.payload?.fields?.drenagem === true),
+    fisioterapia: percentOf((entry) => entry.payload?.fields?.fisioterapia === true),
+    exercicio: percentOf((entry) => entry.payload?.fields?.exercicio === true),
+    avgGarmentHours,
+  };
 }
 
 function renderHomeSnapshot(latest) {
@@ -1280,6 +1325,10 @@ function createPremiumReportPdf() {
   commands.push(pdfText("Este relatorio apoia acompanhamento e nao substitui avaliacao profissional.", 58, 47, 9, muted));
   commands.push(pdfText(`Total analisado: ${data.totalRecords} registros`, 420, 23, 9, muted));
 
+  return buildPdfDocument(commands, pageWidth, pageHeight);
+}
+
+function buildPdfDocument(commands, pageWidth, pageHeight) {
   const stream = commands.join("\n");
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
@@ -1307,8 +1356,87 @@ function createPremiumReportPdf() {
   return new Blob([pdf], { type: "application/pdf" });
 }
 
+function createClinicalReportPdf() {
+  const data = buildPremiumDataset();
+  const adherence = computeTreatmentAdherence();
+  const commands = [];
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const purple = [0.43, 0.20, 0.85];
+  const lavender = [0.96, 0.92, 1.0];
+  const ink = [0.13, 0.09, 0.16];
+  const muted = [0.43, 0.38, 0.49];
+  const line = [0.90, 0.84, 0.95];
+  const pct = (value) => (value === null ? "Sem registros" : `${value}%`);
+
+  commands.push(pdfRect(0, 0, pageWidth, pageHeight, [1.0, 0.985, 1.0]));
+  commands.push(pdfRect(0, 762, pageWidth, 80, lavender));
+  commands.push(pdfRect(0, 762, pageWidth, 10, purple));
+  commands.push(pdfText("Radar Lipedema", 42, 807, 22, purple, "F2"));
+  commands.push(pdfText("Relatorio para acompanhamento medico", 42, 786, 13, ink, "F2"));
+  commands.push(pdfText(`Gerado em ${data.generatedAt}`, 42, 769, 9, muted));
+
+  commands.push(pdfText("Dados da paciente", 42, 732, 14, ink, "F2"));
+  commands.push(pdfRect(42, 664, 510, 56, [1, 1, 1], line));
+  commands.push(pdfText(`Nome: ${currentProfile?.name || "Nao informado"}`, 56, 700, 10, ink));
+  commands.push(pdfText(`Estagio: ${currentProfile?.lipedemaStage ? `Estagio ${currentProfile.lipedemaStage}` : "Nao informado"}`, 56, 685, 10, ink));
+  commands.push(pdfText(`Tipo: ${currentProfile?.lipedemaType ? `Tipo ${currentProfile.lipedemaType}` : "Nao informado"}`, 56, 670, 10, ink));
+
+  commands.push(pdfText("Aderencia ao tratamento conservador", 42, 630, 14, ink, "F2"));
+  commands.push(pdfText(`Baseado em ${adherence.totalEntries} registro(s) de tratamento salvos no periodo.`, 42, 611, 9, muted));
+
+  const adherenceRows = [
+    ["Drenagem linfatica", pct(adherence.drenagem)],
+    ["Fisioterapia", pct(adherence.fisioterapia)],
+    ["Exercicio", pct(adherence.exercicio)],
+    ["Uso medio da meia compressiva", adherence.avgGarmentHours === null ? "Sem registros" : `${adherence.avgGarmentHours} h/dia`],
+    ["Classe de compressao", currentProfile?.garmentCompressionClass || "Nao informado"],
+  ];
+  adherenceRows.forEach(([label, value], index) => {
+    const y = 585 - index * 30;
+    commands.push(pdfRect(42, y, 510, 26, index % 2 === 0 ? [1, 1, 1] : [0.99, 0.97, 1.0], line));
+    commands.push(pdfText(label, 56, y + 15, 10, ink));
+    commands.push(pdfText(String(value), 470, y + 15, 10, purple, "F2"));
+  });
+
+  commands.push(pdfText("Evolucao dos sintomas", 42, 400, 14, ink, "F2"));
+  commands.push(pdfRect(42, 350, 510, 40, purple));
+  ["Periodo", "Dor", "Edema", "Sens.", "Humor"].forEach((title, index) => {
+    const x = [54, 254, 320, 386, 452][index];
+    commands.push(pdfText(title, x, 373, 10, [1, 1, 1], "F2"));
+  });
+  [
+    { label: "Atual", period: data.currentPeriod },
+    { label: "Anterior", period: data.previousPeriod },
+  ].forEach(({ label, period }, index) => {
+    const y = 344 - index * 30;
+    commands.push(pdfRect(42, y, 510, 26, index % 2 === 0 ? [1, 1, 1] : [0.99, 0.97, 1.0], line));
+    commands.push(pdfText(label, 54, y + 14, 9, ink, "F2"));
+    if (period.count) {
+      commands.push(pdfText(`${period.averages.dor.toFixed(1)}/10`, 256, y + 14, 9, muted));
+      commands.push(pdfText(`${period.averages.edema.toFixed(1)}/10`, 322, y + 14, 9, muted));
+      commands.push(pdfText(`${period.averages.sensibilidade.toFixed(1)}/10`, 388, y + 14, 9, muted));
+      commands.push(pdfText(`${period.averages.humor.toFixed(1)}/10`, 454, y + 14, 9, muted));
+    } else {
+      commands.push(pdfText("Sem registros suficientes", 256, y + 14, 9, muted));
+    }
+  });
+
+  commands.push(pdfRect(42, 60, 510, 44, [0.98, 0.95, 1.0], line));
+  commands.push(pdfText("Observacao", 58, 88, 10, purple, "F2"));
+  commands.push(pdfText("Relatorio gerado a partir de registros da propria paciente no app Radar", 58, 75, 9, muted));
+  commands.push(pdfText("Lipedema. Nao substitui avaliacao clinica presencial.", 58, 63, 9, muted));
+  commands.push(pdfText(`Total de registros analisados: ${data.totalRecords}`, 372, 23, 9, muted));
+
+  return buildPdfDocument(commands, pageWidth, pageHeight);
+}
+
 function downloadPdfReport() {
   downloadFile("radar-lipedema-relatorio.pdf", "application/pdf", createPremiumReportPdf());
+}
+
+function downloadClinicalPdfReport() {
+  downloadFile("radar-lipedema-relatorio-medico.pdf", "application/pdf", createClinicalReportPdf());
 }
 
 function downloadJsonExport() {
@@ -1378,36 +1506,98 @@ function downloadCsvExport() {
 const settingsPanels = {
   profile: {
     title: "Perfil",
-    content: `
-      <form class="settings-form" data-panel-form="profile">
-        <div class="profile-photo-card">
-          <button class="avatar profile-avatar" type="button" data-avatar-trigger aria-label="Alterar foto do perfil">
-            <span data-avatar-initial>A</span>
-          </button>
-          <div>
-            <strong>Foto do perfil</strong>
-            <p>Toque para escolher uma imagem da galeria.</p>
+    render() {
+      const name = currentProfile?.name || "";
+      const email = currentProfile?.email || "";
+      const goal = currentProfile?.goal || "";
+      const initial = escapeHtml((name.trim().charAt(0) || "?").toUpperCase());
+      const goalOptions = ["Entender padrões do ciclo", "Reduzir sintomas", "Acompanhar tratamento"];
+
+      const stage = currentProfile?.lipedemaStage || "";
+      const stageOptions = [
+        ["1", "Estágio 1"],
+        ["2", "Estágio 2"],
+        ["3", "Estágio 3"],
+      ];
+
+      const type = currentProfile?.lipedemaType || "";
+      const typeOptions = [
+        ["I", "Tipo I (quadril e coxas)"],
+        ["II", "Tipo II (coxas até joelhos)"],
+        ["III", "Tipo III (quadril até tornozelos)"],
+        ["IV", "Tipo IV (braços)"],
+        ["V", "Tipo V (panturrilhas)"],
+      ];
+
+      const compressionClass = currentProfile?.garmentCompressionClass || "";
+      const compressionOptions = ["15-20 mmHg", "20-30 mmHg", "30-40 mmHg", "40-50 mmHg"];
+
+      const garmentLastReplacedAt = currentProfile?.garmentLastReplacedAt
+        ? String(currentProfile.garmentLastReplacedAt).slice(0, 10)
+        : "";
+      const today = new Date().toISOString().slice(0, 10);
+      const daysSinceReplaced = garmentLastReplacedAt
+        ? Math.floor((Date.now() - new Date(`${garmentLastReplacedAt}T00:00:00`).getTime()) / 86_400_000)
+        : null;
+      const garmentOverdue = daysSinceReplaced !== null && daysSinceReplaced >= 120;
+      const garmentHint =
+        daysSinceReplaced === null
+          ? ""
+          : `<p class="settings-hint${garmentOverdue ? " warning" : ""}">${daysSinceReplaced} dia${daysSinceReplaced === 1 ? "" : "s"} desde a última troca da meia${garmentOverdue ? " — a compressão cai com o uso, considere trocar." : "."}</p>`;
+
+      const buildOptions = (options, selectedValue, asPairs = false) => {
+        const pairs = asPairs ? options : options.map((value) => [value, value]);
+        return [`<option value="">Não informado</option>`]
+          .concat(
+            pairs.map(
+              ([value, label]) => `<option value="${escapeHtml(value)}"${value === selectedValue ? " selected" : ""}>${escapeHtml(label)}</option>`
+            )
+          )
+          .join("");
+      };
+
+      return `
+        <form class="settings-form" data-panel-form="profile">
+          <div class="profile-photo-card">
+            <button class="avatar profile-avatar" type="button" data-avatar-trigger aria-label="Alterar foto do perfil">
+              <span data-avatar-initial>${initial}</span>
+            </button>
+            <div>
+              <strong>Foto do perfil</strong>
+              <p>Toque para escolher uma imagem da galeria.</p>
+            </div>
           </div>
-        </div>
-        <label class="settings-field">Nome
-          <input name="name" value="Ana" autocomplete="name">
-        </label>
-        <label class="settings-field">E-mail
-          <input name="email" type="email" value="ana@email.com" autocomplete="email">
-        </label>
-        <label class="settings-field">Objetivo
-          <select name="goal">
-            <option>Entender padr&otilde;es do ciclo</option>
-            <option>Reduzir sintomas</option>
-            <option>Acompanhar tratamento</option>
-          </select>
-        </label>
-        <div class="settings-action-row">
-          <button class="panel-button" type="submit">Salvar perfil</button>
-          <button class="panel-button secondary" type="button" data-panel-action="avatar">Alterar foto</button>
-        </div>
-      </form>
-    `,
+          <label class="settings-field">Nome
+            <input name="name" value="${escapeHtml(name)}" autocomplete="name">
+          </label>
+          <label class="settings-field">E-mail
+            <input name="email" type="email" value="${escapeHtml(email)}" autocomplete="email">
+          </label>
+          <label class="settings-field">Objetivo
+            <select name="goal">
+              ${goalOptions.map((option) => `<option${option === goal ? " selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+            </select>
+          </label>
+          <label class="settings-field">Estágio do lipedema <small>(conforme diagnóstico médico)</small>
+            <select name="lipedemaStage">${buildOptions(stageOptions, stage, true)}</select>
+          </label>
+          <label class="settings-field">Tipo do lipedema <small>(conforme diagnóstico médico)</small>
+            <select name="lipedemaType">${buildOptions(typeOptions, type, true)}</select>
+          </label>
+          <label class="settings-field">Classe de compressão da meia
+            <select name="garmentCompressionClass">${buildOptions(compressionOptions, compressionClass)}</select>
+          </label>
+          <label class="settings-field">Data da última troca da meia
+            <input type="date" name="garmentLastReplacedAt" value="${garmentLastReplacedAt}" max="${today}">
+          </label>
+          ${garmentHint}
+          <div class="settings-action-row">
+            <button class="panel-button" type="submit">Salvar perfil</button>
+            <button class="panel-button secondary" type="button" data-panel-action="avatar">Alterar foto</button>
+          </div>
+        </form>
+      `;
+    },
   },
   cycle: {
     title: "Prefer&ecirc;ncias do ciclo",
@@ -1503,6 +1693,7 @@ const settingsPanels = {
             <button class="panel-button" type="button" data-panel-action="run-backup">Fazer backup agora</button>
             <button class="panel-button secondary" type="button" data-panel-action="export-csv">Exportar CSV</button>
             <button class="panel-button secondary" type="button" data-panel-action="export-pdf">Exportar PDF</button>
+            <button class="panel-button secondary" type="button" data-panel-action="export-clinical-pdf">Relatório para o médico</button>
           </div>
         </div>
       `;
@@ -1515,9 +1706,41 @@ const settingsPanels = {
         <div class="panel-list">
           <div class="panel-row"><span>Bloqueio por senha<small>Solicitar ao abrir o app</small></span><label class="switch"><input type="checkbox" checked><i></i></label></div>
           <div class="panel-row"><span>Dados an&ocirc;nimos<small>Ajudar a melhorar os insights</small></span><label class="switch"><input type="checkbox"><i></i></label></div>
-          <button type="button" data-panel-action="change-password">Alterar senha</button>
-          <button type="button" data-panel-action="delete-data">Apagar dados locais</button>
+          <button type="button" data-settings-panel="change-password">Alterar senha</button>
+          <button type="button" data-settings-panel="delete-account">Apagar conta e dados</button>
         </div>
+      </div>
+    `,
+  },
+  "change-password": {
+    title: "Alterar senha",
+    content: `
+      <form class="settings-form" data-panel-form="change-password">
+        <label class="settings-field">Senha atual
+          <input name="currentPassword" type="password" autocomplete="current-password" required minlength="6">
+        </label>
+        <label class="settings-field">Nova senha
+          <input name="newPassword" type="password" autocomplete="new-password" required minlength="6">
+        </label>
+        <label class="settings-field">Confirmar nova senha
+          <input name="confirmPassword" type="password" autocomplete="new-password" required minlength="6">
+        </label>
+        <button class="panel-button" type="submit">Salvar nova senha</button>
+      </form>
+    `,
+  },
+  "delete-account": {
+    title: "Apagar conta e dados",
+    content: `
+      <div class="settings-form">
+        <article class="settings-mini-card">
+          <strong>Isso é definitivo</strong>
+          <p>Sua conta, registros, fotos e hist&oacute;rico ser&atilde;o apagados permanentemente do nosso banco de dados. N&atilde;o &eacute; poss&iacute;vel desfazer.</p>
+        </article>
+        <label class="settings-field">Digite sua senha para confirmar
+          <input data-delete-account-password type="password" autocomplete="current-password">
+        </label>
+        <button class="panel-button danger" type="button" data-panel-action="confirm-delete-account">Apagar conta e todos os dados</button>
       </div>
     `,
   },
@@ -1722,14 +1945,14 @@ const registerPanels = {
       return `
         <div class="smart-register-panel">
           <div class="panel-list checklist-panel">
-            <label class="panel-row"><span>Drenagem linf&aacute;tica<small>Realizada hoje</small></span><input type="checkbox" checked></label>
-            <label class="panel-row"><span>Pressoterapia<small>Sess&atilde;o ou equipamento</small></span><input type="checkbox" checked></label>
-            <label class="panel-row"><span>LPG<small>Tratamento complementar</small></span><input type="checkbox"></label>
-            <label class="panel-row"><span>Fisioterapia<small>Mobilidade e dor</small></span><input type="checkbox" checked></label>
-            <label class="panel-row"><span>Exerc&iacute;cio<small>Muscula&ccedil;&atilde;o, caminhada</small></span><input type="checkbox" checked></label>
-            <label class="panel-row"><span>Meia compressiva<small>Uso cont&iacute;nuo</small></span><input type="checkbox"></label>
-            <label class="panel-row"><span>Medicamentos<small>Conforme prescri&ccedil;&atilde;o</small></span><input type="checkbox"></label>
-            <label class="panel-row"><span>Suplementos<small>Conforme orienta&ccedil;&atilde;o</small></span><input type="checkbox"></label>
+            <label class="panel-row"><span>Drenagem linf&aacute;tica<small>Realizada hoje</small></span><input type="checkbox" name="drenagem"></label>
+            <label class="panel-row"><span>Pressoterapia<small>Sess&atilde;o ou equipamento</small></span><input type="checkbox" name="pressoterapia"></label>
+            <label class="panel-row"><span>LPG<small>Tratamento complementar</small></span><input type="checkbox" name="lpg"></label>
+            <label class="panel-row"><span>Fisioterapia<small>Mobilidade e dor</small></span><input type="checkbox" name="fisioterapia"></label>
+            <label class="panel-row"><span>Exerc&iacute;cio<small>Muscula&ccedil;&atilde;o, caminhada</small></span><input type="checkbox" name="exercicio"></label>
+            <label class="panel-row"><span>Meia compressiva<small>Horas de uso hoje</small></span><input type="number" name="garmentHours" min="0" max="24" step="1" inputmode="numeric" placeholder="0" style="width:64px;text-align:center"></label>
+            <label class="panel-row"><span>Medicamentos<small>Conforme prescri&ccedil;&atilde;o</small></span><input type="checkbox" name="medicamentos"></label>
+            <label class="panel-row"><span>Suplementos<small>Conforme orienta&ccedil;&atilde;o</small></span><input type="checkbox" name="suplementos"></label>
           </div>
           <label class="settings-field pain-note-field"><span>Observa&ccedil;&otilde;es <small>(opcional)</small></span>
             <textarea placeholder="Ex.: drenagem com terapeuta X"></textarea>
@@ -1746,10 +1969,10 @@ const registerPanels = {
         <div class="smart-register-panel">
           <div class="panel-list habit-panel">
             <div class="panel-row" data-habit-stepper="water" data-value="2" data-min="0" data-max="5" data-step-size="0.25" data-unit="litros"><span>&Aacute;gua<small data-habit-value>2 litros</small></span><span class="stepper-inline"><button type="button" data-habit-step="-1">-</button><button type="button" data-habit-step="1">+</button></span></div>
-            <div class="panel-row"><span>Meia compressiva<small>Usou hoje?</small></span><label class="switch"><input type="checkbox" checked><i></i></label></div>
+            <div class="panel-row"><span>Meia compressiva<small>Usou hoje?</small></span><label class="switch"><input type="checkbox" name="usedGarmentToday"><i></i></label></div>
             <div class="panel-row"><span>Exerc&iacute;cios<small>Caminhada</small></span><svg class="icon"><use href="#i-arrow"></use></svg></div>
             <div class="panel-row" data-habit-stepper="sleep" data-value="7" data-min="0" data-max="12" data-step-size="0.5" data-unit="horas"><span>Sono<small data-habit-value>7 horas</small></span><span class="stepper-inline"><button type="button" data-habit-step="-1">-</button><button type="button" data-habit-step="1">+</button></span></div>
-            <div class="panel-row"><span>Alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria<small>Marcada no dia</small></span><label class="switch"><input type="checkbox" checked><i></i></label></div>
+            <div class="panel-row"><span>Alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria<small>Marcada no dia</small></span><label class="switch"><input type="checkbox" name="antiInflammatoryDiet"><i></i></label></div>
           </div>
           <button class="panel-button" type="button" data-panel-action="save-habits">Salvar h&aacute;bitos</button>
         </div>
@@ -1762,9 +1985,9 @@ const registerPanels = {
       return `
         <div class="smart-register-panel">
           <div class="panel-list symptom-extra-panel">
-            <div class="panel-row"><span>Hematomas<small>Manchas ou roxos novos</small></span><label class="switch"><input type="checkbox" checked><i></i></label></div>
+            <div class="panel-row"><span>Hematomas<small>Manchas ou roxos novos hoje</small></span><label class="switch"><input type="checkbox" name="hasBruising"><i></i></label></div>
             <label class="settings-field">Onde?
-              <select>
+              <select name="bruisingLocation">
                 <option>Coxa esquerda</option>
                 <option>Coxa direita</option>
                 <option>Panturrilha</option>
@@ -2279,17 +2502,66 @@ settingsPanelContent.addEventListener("submit", (event) => {
   const form = event.target.closest("[data-panel-form]");
   if (form && form.dataset.panelForm === "profile") {
     const formData = new FormData(form);
-    const name = formData.get("name") || "Ana";
+    const name = formData.get("name") || currentProfile?.name || "";
     const email = formData.get("email") || "";
     const goal = formData.get("goal") || "";
+    const lipedemaStage = formData.get("lipedemaStage") || null;
+    const lipedemaType = formData.get("lipedemaType") || null;
+    const garmentCompressionClass = formData.get("garmentCompressionClass") || null;
+    const garmentLastReplacedAt = formData.get("garmentLastReplacedAt") || null;
     document.querySelector("#home-title").textContent = `Ol\u00e1, ${name}`;
-    saveProfileToServer({ name, email, goal, photoDataUrl: profilePhoto });
+    saveProfileToServer({
+      name,
+      email,
+      goal,
+      photoDataUrl: profilePhoto,
+      lipedemaStage,
+      lipedemaType,
+      garmentCompressionClass,
+      garmentLastReplacedAt,
+    }).then(() => loadServerState());
     showToast("Perfil salvo");
     closeSettingsPanel();
+    return;
+  }
+
+  if (form && form.dataset.panelForm === "change-password") {
+    const formData = new FormData(form);
+    const currentPassword = String(formData.get("currentPassword") || "");
+    const newPassword = String(formData.get("newPassword") || "");
+    const confirmPassword = String(formData.get("confirmPassword") || "");
+
+    if (newPassword.length < 6) {
+      showToast("A nova senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showToast("A confirma\u00e7\u00e3o n\u00e3o bate com a nova senha.");
+      return;
+    }
+
+    apiRequest("/api/auth/change-password", {
+      method: "POST",
+      body: { currentPassword, newPassword },
+    }).then((result) => {
+      if (!result || result.ok === false) {
+        showToast(result?.error || "N\u00e3o foi poss\u00edvel trocar a senha.");
+        return;
+      }
+      showToast("Senha alterada com sucesso");
+      closeSettingsPanel();
+    });
   }
 });
 
 settingsPanelContent.addEventListener("click", (event) => {
+  const nestedPanelTrigger = event.target.closest("[data-settings-panel]");
+  if (nestedPanelTrigger) {
+    openSettingsPanel(nestedPanelTrigger.dataset.settingsPanel);
+    return;
+  }
+
   const verifyAction = event.target.closest("[data-verify-action]");
   if (verifyAction) {
     handleVerifyAction(verifyAction.dataset.verifyAction, verifyAction.dataset.verifyEmail);
@@ -2377,6 +2649,35 @@ settingsPanelContent.addEventListener("click", (event) => {
     return;
   }
 
+  if (actionName === "confirm-delete-account") {
+    const passwordInput = settingsPanelContent.querySelector("[data-delete-account-password]");
+    const password = passwordInput?.value || "";
+
+    if (!password) {
+      showToast("Digite sua senha para confirmar.");
+      return;
+    }
+
+    if (!window.confirm("Tem certeza? Sua conta e todos os dados ser\u00e3o apagados permanentemente.")) {
+      return;
+    }
+
+    apiRequest("/api/account", {
+      method: "DELETE",
+      body: { password },
+    }).then((result) => {
+      if (!result || result.ok === false) {
+        showToast(result?.error || "N\u00e3o foi poss\u00edvel apagar a conta.");
+        return;
+      }
+      closeSettingsPanel();
+      currentProfile = null;
+      showScreen("login");
+      showToast("Conta e dados apagados.");
+    });
+    return;
+  }
+
   const messages = {
     avatar: "Foto atualizada",
     "save-cycle": "Prefer\u00eancias do ciclo salvas",
@@ -2386,8 +2687,7 @@ settingsPanelContent.addEventListener("click", (event) => {
     "export-csv": "CSV exportado",
     "export-json": "JSON exportado",
     "export-pdf": "PDF exportado",
-    "change-password": "Tela de senha aberta",
-    "delete-data": "Confirma\u00e7\u00e3o para apagar dados aberta",
+    "export-clinical-pdf": "Relatório para o médico exportado",
     faq: "FAQ aberta",
     contact: "Suporte aberto",
     tutorial: "Tutorial iniciado",
@@ -2410,6 +2710,10 @@ settingsPanelContent.addEventListener("click", (event) => {
 
   if (actionName === "export-pdf") {
     downloadPdfReport();
+  }
+
+  if (actionName === "export-clinical-pdf") {
+    downloadClinicalPdfReport();
   }
 
   if (actionName === "export-csv") {

@@ -2972,6 +2972,10 @@ input[type="range"] {
   background: #fff;
 }
 
+.panel-button.danger {
+  background: #e0263d;
+}
+
 .panel-list {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -3091,6 +3095,17 @@ input[type="range"] {
   color: var(--purple);
   font-size: 12px;
   font-weight: 850;
+}
+
+.settings-hint {
+  color: var(--purple);
+  font-size: 12px;
+  font-weight: 700;
+  margin: -8px 0 4px;
+}
+
+.settings-hint.warning {
+  color: #e0263d;
 }
 
 .bottom-nav {
