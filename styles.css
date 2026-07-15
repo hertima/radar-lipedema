@@ -511,7 +511,7 @@ h2 {
   height: 74px;
   border-radius: 50%;
   background:
-    conic-gradient(var(--purple) 0 84deg, #eadbff 84deg),
+    conic-gradient(var(--purple) 0 calc(var(--percent, 0) * 3.6deg), #eadbff 0),
     #eadbff;
   mask: radial-gradient(circle 25px, transparent 98%, #000 100%);
 }

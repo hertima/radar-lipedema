@@ -182,14 +182,14 @@
               <img src="imagem/imagem/havatar 01.png" alt="Mascote da sequencia">
             </article>
 
-            <section class="card cycle-card" aria-label="Resumo do ciclo">
+            <section class="card cycle-card" aria-label="Resumo do ciclo" data-cycle-card>
               <div>
                 <p class="section-label">Resumo do ciclo</p>
-                <span>Fase atual</span>
-                <strong>Fase Folicular</strong>
-                <small>Dia 7 de 28</small>
+                <span data-cycle-caption>Fase atual</span>
+                <strong data-cycle-phase>Registre a data do seu ciclo</strong>
+                <small data-cycle-day>Ajustes &gt; Prefer&ecirc;ncias do ciclo</small>
               </div>
-              <div class="cycle-ring" aria-label="25 por cento do ciclo"></div>
+              <div class="cycle-ring" data-cycle-ring aria-label="Progresso do ciclo"></div>
             </section>
 
             <section class="card symptoms-card" aria-label="Sintomas de hoje">
@@ -264,29 +264,28 @@
             <section class="tab-panel active" data-panel="cycle">
               <p class="section-label">Fluxo menstrual</p>
               <div class="flow-grid">
-                <button type="button">
+                <button class="active" type="button" data-flow="Nenhum">
                   <svg class="icon"><use href="#i-drop"></use></svg>
                   <span>Nenhum</span>
                 </button>
-                <button type="button">
+                <button type="button" data-flow="Leve">
                   <svg class="icon"><use href="#i-drop"></use></svg>
                   <span>Leve</span>
                 </button>
-                <button class="active" type="button">
+                <button type="button" data-flow="Moderado">
                   <svg class="icon"><use href="#i-drop"></use></svg>
                   <span>Moderado</span>
                 </button>
-                <button type="button">
+                <button type="button" data-flow="Intenso">
                   <svg class="icon"><use href="#i-drop"></use></svg>
                   <span>Intenso</span>
                 </button>
               </div>
-              <div class="cycle-options">
-                <button class="active" type="button" data-toast="Dia marcado como fase folicular">Folicular</button>
-                <button type="button" data-toast="Fase ovulat&oacute;ria selecionada">Ovulat&oacute;ria</button>
-                <button type="button" data-toast="Fase l&uacute;tea selecionada">L&uacute;tea</button>
-                <button type="button" data-toast="Menstrua&ccedil;&atilde;o registrada">Menstrual</button>
-              </div>
+              <article class="phase-summary" data-cycle-status-card>
+                <strong data-register-cycle-phase>Sem dados do ciclo ainda</strong>
+                <p data-register-cycle-day>Informe a data em Ajustes &gt; Prefer&ecirc;ncias do ciclo.</p>
+              </article>
+              <button class="panel-button secondary" type="button" data-panel-action="mark-period-start">Marcar hoje como 1&ordm; dia do ciclo</button>
             </section>
 
             <section class="card range-card tab-panel active" data-panel="symptoms">
@@ -449,13 +448,10 @@
 
             <section class="card cycle-timeline tab-panel" data-panel="cycle-history" aria-label="Historico do ciclo">
               <p class="section-label">Linha do ciclo</p>
-              <div class="cycle-days">
-                <span class="done">1</span><span class="done">2</span><span class="done">3</span><span class="done">4</span><span class="done">5</span><span class="done">6</span><span class="active">7</span>
-                <span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
-              </div>
+              <div class="cycle-days" data-cycle-days></div>
               <article class="phase-summary">
-                <strong>Fase Folicular</strong>
-                <p>Energia em alta, humor melhor e sensibilidade reduzindo nos &uacute;ltimos 3 registros.</p>
+                <strong data-cycle-phase-title>Sem dados do ciclo ainda</strong>
+                <p data-cycle-phase-text>Informe a data do seu &uacute;ltimo ciclo em Ajustes &gt; Prefer&ecirc;ncias do ciclo para acompanhar aqui.</p>
               </article>
             </section>
 

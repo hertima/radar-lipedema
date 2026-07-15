@@ -287,7 +287,9 @@ app.post("/api/auth/verify-email", rateLimit("verify-email", 10, 10 * 60 * 1000)
   await pool.query("update users set email_verified = true where id = $1", [user.id]);
 
   const profileResult = await pool.query(
-    `select id, name, email, goal, photo_data_url as "photoDataUrl", updated_at as "updatedAt"
+    `select id, name, email, goal, photo_data_url as "photoDataUrl",
+            cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
+            updated_at as "updatedAt"
        from profiles where id = $1`,
     [user.id]
   );
@@ -340,7 +342,9 @@ app.get("/api/auth/me", asyncRoute(async (request, response) => {
   }
 
   const result = await pool.query(
-    `select id, name, email, goal, photo_data_url as "photoDataUrl", updated_at as "updatedAt"
+    `select id, name, email, goal, photo_data_url as "photoDataUrl",
+            cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
+            updated_at as "updatedAt"
        from profiles where id = $1`,
     [userId]
   );
@@ -409,7 +413,9 @@ app.post("/api/auth/reset-password", rateLimit("reset-password", 10, 15 * 60 * 1
 app.get("/api/bootstrap", requireAuth, asyncRoute(async (request, response) => {
   const [profile, records, photos] = await Promise.all([
     pool.query(
-      `select id, name, email, goal, photo_data_url as "photoDataUrl", updated_at as "updatedAt"
+      `select id, name, email, goal, photo_data_url as "photoDataUrl",
+            cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
+            updated_at as "updatedAt"
          from profiles where id = $1`,
       [request.userId]
     ),
@@ -437,16 +443,34 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
   const goal = cleanText(request.body.goal, "", 240);
   const photoDataUrl = cleanText(request.body.photoDataUrl, "", 20_000_000);
 
+  const cycleLengthRaw = Number(request.body.cycleLength);
+  const periodLengthRaw = Number(request.body.periodLength);
+  const cycleLength = Number.isFinite(cycleLengthRaw) ? Math.max(15, Math.min(60, Math.round(cycleLengthRaw))) : null;
+  const periodLength = Number.isFinite(periodLengthRaw) ? Math.max(1, Math.min(15, Math.round(periodLengthRaw))) : null;
+
+  let lastPeriodStart = null;
+  if (typeof request.body.lastPeriodStart === "string" && /^\d{4}-\d{2}-\d{2}$/.test(request.body.lastPeriodStart)) {
+    const parsed = new Date(`${request.body.lastPeriodStart}T00:00:00Z`);
+    if (!Number.isNaN(parsed.getTime()) && parsed.getTime() <= Date.now()) {
+      lastPeriodStart = request.body.lastPeriodStart;
+    }
+  }
+
   const result = await pool.query(
     `update profiles set
        name = coalesce(nullif($2, ''), name),
        email = coalesce(nullif($3, ''), email),
        goal = coalesce(nullif($4, ''), goal),
        photo_data_url = coalesce(nullif($5, ''), photo_data_url),
+       cycle_length = coalesce($6, cycle_length),
+       period_length = coalesce($7, period_length),
+       last_period_start = coalesce($8, last_period_start),
        updated_at = now()
      where id = $1
-     returning id, name, email, goal, photo_data_url as "photoDataUrl", updated_at as "updatedAt"`,
-    [request.userId, name, email, goal, photoDataUrl]
+     returning id, name, email, goal, photo_data_url as "photoDataUrl",
+               cycle_length as "cycleLength", period_length as "periodLength", last_period_start as "lastPeriodStart",
+               updated_at as "updatedAt"`,
+    [request.userId, name, email, goal, photoDataUrl, cycleLength, periodLength, lastPeriodStart]
   );
 
   response.json({ ok: true, profile: result.rows[0] });

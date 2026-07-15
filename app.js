@@ -38,6 +38,8 @@ const photoSlotTemplates = [
 const photoSlotImages = {};
 const insightIconMap = { pink: "i-heart", purple: "i-drop", orange: "i-sun", teal: "i-trend" };
 let recordHistory = [];
+let currentProfile = null;
+const phaseNames = ["Menstrual", "Folicular", "Ovulatória", "Lútea"];
 
 try {
   profilePhoto = localStorage.getItem("radar-lipedema-profile-photo") || "";
@@ -131,6 +133,106 @@ function getDailyRegisters() {
 
 function averageOf(entries, key) {
   return entries.length ? entries.reduce((total, entry) => total + entry[key], 0) / entries.length : null;
+}
+
+function computeCycleInfo(profile) {
+  if (!profile?.lastPeriodStart) {
+    return null;
+  }
+
+  const cycleLength = profile.cycleLength || 28;
+  const periodLength = profile.periodLength || 5;
+  const start = new Date(`${profile.lastPeriodStart}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);
+
+  const daysSinceStart = Math.round((today - start) / 86_400_000);
+  const cycleDay = (((daysSinceStart % cycleLength) + cycleLength) % cycleLength) + 1;
+  const ovulationDay = Math.max(periodLength + 3, cycleLength - 14);
+
+  let phase;
+  if (cycleDay <= periodLength) {
+    phase = "Menstrual";
+  } else if (cycleDay >= ovulationDay - 1 && cycleDay <= ovulationDay + 1) {
+    phase = "Ovulatória";
+  } else if (cycleDay < ovulationDay - 1) {
+    phase = "Folicular";
+  } else {
+    phase = "Lútea";
+  }
+
+  return {
+    cycleDay,
+    cycleLength,
+    periodLength,
+    phase,
+    percent: Math.round((cycleDay / cycleLength) * 100),
+  };
+}
+
+function renderCycleCard(profile) {
+  const info = computeCycleInfo(profile);
+  const phaseEl = document.querySelector("[data-cycle-phase]");
+  const dayEl = document.querySelector("[data-cycle-day]");
+  const ringEl = document.querySelector("[data-cycle-ring]");
+  const registerPhaseEl = document.querySelector("[data-register-cycle-phase]");
+  const registerDayEl = document.querySelector("[data-register-cycle-day]");
+
+  if (!info) {
+    if (phaseEl) phaseEl.textContent = "Registre a data do seu ciclo";
+    if (dayEl) dayEl.textContent = "Ajustes > Preferências do ciclo";
+    if (ringEl) {
+      ringEl.style.setProperty("--percent", "0");
+      ringEl.setAttribute("aria-label", "Sem dados do ciclo");
+    }
+    if (registerPhaseEl) registerPhaseEl.textContent = "Sem dados do ciclo ainda";
+    if (registerDayEl) registerDayEl.textContent = "Informe a data em Ajustes > Preferências do ciclo.";
+    return;
+  }
+
+  if (phaseEl) phaseEl.textContent = `Fase ${info.phase}`;
+  if (dayEl) dayEl.textContent = `Dia ${info.cycleDay} de ${info.cycleLength}`;
+  if (ringEl) {
+    ringEl.style.setProperty("--percent", String(info.percent));
+    ringEl.setAttribute("aria-label", `${info.percent} por cento do ciclo`);
+  }
+  if (registerPhaseEl) registerPhaseEl.textContent = `Fase ${info.phase} — Dia ${info.cycleDay} de ${info.cycleLength}`;
+  if (registerDayEl) registerDayEl.textContent = cyclePhaseSummaries[info.phase] || "";
+}
+
+const cyclePhaseSummaries = {
+  Menstrual: "Fase de menstruação. Priorize descanso e observe seus sintomas de dor e edema.",
+  Folicular: "Energia tende a subir nessa fase. Bom momento para retomar hábitos e rotina.",
+  "Ovulatória": "Período fértil. Sensibilidade pode aumentar para algumas mulheres.",
+  "Lútea": "Fase pré-menstrual. Sintomas como dor e sensibilidade costumam ficar mais intensos.",
+};
+
+function renderCycleTimeline(profile) {
+  const info = computeCycleInfo(profile);
+  const daysContainer = document.querySelector("[data-cycle-days]");
+  const titleEl = document.querySelector("[data-cycle-phase-title]");
+  const textEl = document.querySelector("[data-cycle-phase-text]");
+
+  if (!info) {
+    if (daysContainer) {
+      daysContainer.innerHTML = "";
+    }
+    if (titleEl) titleEl.textContent = "Sem dados do ciclo ainda";
+    if (textEl) textEl.textContent = "Informe a data do seu último ciclo em Ajustes > Preferências do ciclo para acompanhar aqui.";
+    return;
+  }
+
+  if (daysContainer) {
+    daysContainer.innerHTML = Array.from({ length: info.cycleLength }, (_, index) => {
+      const day = index + 1;
+      const className = day < info.cycleDay ? "done" : day === info.cycleDay ? "active" : "";
+      return `<span class="${className}">${day}</span>`;
+    }).join("");
+  }
+
+  if (titleEl) titleEl.textContent = `Fase ${info.phase}`;
+  if (textEl) textEl.textContent = cyclePhaseSummaries[info.phase] || "";
 }
 
 function computeInsights(history) {
@@ -571,6 +673,8 @@ function renderDynamicData() {
   renderInsightsHero(history);
   renderRecentTrendCards(history);
   renderGamification(history);
+  renderCycleCard(currentProfile);
+  renderCycleTimeline(currentProfile);
   updatePremiumSummaries();
 }
 
@@ -690,6 +794,8 @@ async function loadServerState() {
   if (!data || data.ok === false) {
     return;
   }
+
+  currentProfile = data.profile || null;
 
   if (data.profile?.name) {
     document.querySelector("#home-title").textContent = `Ol\u00e1, ${data.profile.name}`;
@@ -1273,29 +1379,34 @@ const settingsPanels = {
   },
   cycle: {
     title: "Prefer&ecirc;ncias do ciclo",
-    content: `
-      <div class="settings-form">
-        <label class="settings-field">Dura&ccedil;&atilde;o do ciclo
-          <div class="stepper-row" data-stepper="cycleLength">
-            <button type="button" data-step="-1">-</button>
-            <output>28 dias</output>
-            <button type="button" data-step="1">+</button>
-          </div>
-        </label>
-        <label class="settings-field">Dura&ccedil;&atilde;o da menstrua&ccedil;&atilde;o
-          <div class="stepper-row" data-stepper="periodLength">
-            <button type="button" data-step="-1">-</button>
-            <output>5 dias</output>
-            <button type="button" data-step="1">+</button>
-          </div>
-        </label>
-        <div class="panel-list">
-          <div class="panel-row"><span>Previs&atilde;o autom&aacute;tica<small>Usar registros para estimar fases</small></span><label class="switch"><input type="checkbox" checked><i></i></label></div>
-          <div class="panel-row"><span>Marcar ciclo irregular<small>Ajusta alertas e insights</small></span><label class="switch"><input type="checkbox"><i></i></label></div>
+    render() {
+      stepperValues.cycleLength.value = currentProfile?.cycleLength || 28;
+      stepperValues.periodLength.value = currentProfile?.periodLength || 5;
+      const lastPeriodStart = currentProfile?.lastPeriodStart || "";
+      const today = new Date().toISOString().slice(0, 10);
+      return `
+        <div class="settings-form">
+          <label class="settings-field">Data do &uacute;ltimo in&iacute;cio do ciclo
+            <input type="date" data-cycle-field="lastPeriodStart" value="${lastPeriodStart}" max="${today}">
+          </label>
+          <label class="settings-field">Dura&ccedil;&atilde;o do ciclo
+            <div class="stepper-row" data-stepper="cycleLength">
+              <button type="button" data-step="-1">-</button>
+              <output>${stepperValues.cycleLength.value} dias</output>
+              <button type="button" data-step="1">+</button>
+            </div>
+          </label>
+          <label class="settings-field">Dura&ccedil;&atilde;o da menstrua&ccedil;&atilde;o
+            <div class="stepper-row" data-stepper="periodLength">
+              <button type="button" data-step="-1">-</button>
+              <output>${stepperValues.periodLength.value} dias</output>
+              <button type="button" data-step="1">+</button>
+            </div>
+          </label>
+          <button class="panel-button" type="button" data-panel-action="save-cycle">Salvar prefer&ecirc;ncias</button>
         </div>
-        <button class="panel-button" type="button" data-panel-action="save-cycle">Salvar prefer&ecirc;ncias</button>
-      </div>
-    `,
+      `;
+    },
   },
   reminders: {
     title: "Lembretes",
@@ -1763,7 +1874,7 @@ function openSettingsPanel(panelId) {
   }
 
   settingsPanelTitle.innerHTML = panel.title;
-  settingsPanelContent.innerHTML = panel.content;
+  settingsPanelContent.innerHTML = panel.render ? panel.render() : panel.content;
   setProfilePhoto(profilePhoto);
   settingsSheet.classList.add("open");
   settingsSheet.setAttribute("aria-hidden", "false");
@@ -2282,6 +2393,18 @@ settingsPanelContent.addEventListener("click", (event) => {
     downloadJsonExport();
   }
 
+  if (actionName === "save-cycle") {
+    const lastPeriodStart = settingsPanelContent.querySelector('[data-cycle-field="lastPeriodStart"]')?.value || "";
+    saveProfileToServer({
+      cycleLength: stepperValues.cycleLength.value,
+      periodLength: stepperValues.periodLength.value,
+      lastPeriodStart,
+    }).then(() => loadServerState());
+    showToast(messages[actionName]);
+    closeSettingsPanel();
+    return;
+  }
+
   showToast(messages[actionName] || "A\u00e7\u00e3o conclu\u00edda");
   if (actionName.startsWith("save-")) {
     const extra = actionName === "save-weight" ? { weight: Number(document.querySelector("[data-weight-card]")?.dataset.value) } : {};
@@ -2315,6 +2438,15 @@ document.querySelectorAll("[data-period-step]").forEach((button) => {
   });
 });
 
+document.querySelectorAll('[data-panel-action="mark-period-start"]').forEach((button) => {
+  button.addEventListener("click", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    await saveProfileToServer({ lastPeriodStart: today });
+    await loadServerState();
+    showToast("Hoje marcado como 1º dia do ciclo");
+  });
+});
+
 document.querySelectorAll("[data-save-register]").forEach((button) => {
   button.addEventListener("click", async () => {
     const values = getCurrentSymptomValues();
@@ -2324,6 +2456,8 @@ document.querySelectorAll("[data-save-register]").forEach((button) => {
     const dominantIndex = severityValues.indexOf(maxSeverity);
     const isNormal = maxSeverity <= 1;
     const dominantLevel = isNormal ? "Sem alerta" : maxSeverity >= 8 ? "Intenso" : maxSeverity >= 5 ? "Moderado" : "Leve";
+
+    const flow = document.querySelector(".flow-grid button.active")?.dataset.flow || "Nenhum";
 
     await saveRecordToServer("daily_register", {
       symptoms: {
@@ -2335,6 +2469,7 @@ document.querySelectorAll("[data-save-register]").forEach((button) => {
       average,
       dominant: isNormal ? "Normal" : symptomDisplayNames[dominantIndex],
       dominantLevel,
+      flow,
       note: document.querySelector("#register .notes-field textarea")?.value || "",
       savedAt: new Date().toISOString(),
     });

@@ -28,9 +28,16 @@ create table if not exists profiles (
   email text not null default '',
   goal text not null default '',
   photo_data_url text,
+  cycle_length int not null default 28,
+  period_length int not null default 5,
+  last_period_start date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table profiles add column if not exists cycle_length int not null default 28;
+alter table profiles add column if not exists period_length int not null default 5;
+alter table profiles add column if not exists last_period_start date;
 
 create table if not exists records (
   id bigserial primary key,
