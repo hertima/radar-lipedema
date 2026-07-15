@@ -324,9 +324,9 @@ a {
 
 .lp-problem-label {
   font-family: "Inter", sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: clamp(20px, 5vw, 26px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: #ffd1e4;
   margin-bottom: 18px;
