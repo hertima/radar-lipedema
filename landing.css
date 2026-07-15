@@ -1052,7 +1052,8 @@ a {
   height: 76px;
 }
 
-.lp-footer-brand img.lp-footer-secure {
+.lp-footer-brand img.lp-footer-secure,
+.lp-footer-brand img.lp-footer-guarantee {
   height: 72px;
 }
 
