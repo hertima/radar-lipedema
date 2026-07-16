@@ -1981,23 +1981,28 @@ const settingsPanels = {
   },
   goals: {
     title: "Meta de sintomas",
-    content: `
-      <div class="settings-form">
-        <article class="settings-mini-card">
-          <strong>Meta atual</strong>
-          <p>Manter dor e edema abaixo de 5/10 durante a fase l&uacute;tea.</p>
-        </article>
-        <label class="range-line" style="--color: #f43f82">
-          <span>Dor m&aacute;xima <output>5</output></span>
-          <input type="range" min="0" max="10" value="5">
-        </label>
-        <label class="range-line" style="--color: #8b5cf6">
-          <span>Edema m&aacute;ximo <output>5</output></span>
-          <input type="range" min="0" max="10" value="5">
-        </label>
-        <button class="panel-button" type="button" data-panel-action="save-goals">Salvar meta</button>
-      </div>
-    `,
+    render() {
+      const lastGoal = [...recordHistory].reverse().find((record) => record.recordType === "save-goals");
+      const maxDor = Number(lastGoal?.payload?.fields?.maxDor) || 5;
+      const maxEdema = Number(lastGoal?.payload?.fields?.maxEdema) || 5;
+      return `
+        <div class="settings-form">
+          <article class="settings-mini-card">
+            <strong>Meta atual</strong>
+            <p>${lastGoal ? `Manter dor abaixo de ${maxDor}/10 e edema abaixo de ${maxEdema}/10.` : "Voc&ecirc; ainda n&atilde;o definiu uma meta. Ajuste os controles abaixo e salve."}</p>
+          </article>
+          <label class="range-line" style="--color: #f43f82">
+            <span>Dor m&aacute;xima <output>${maxDor}</output></span>
+            <input type="range" name="maxDor" min="0" max="10" value="${maxDor}">
+          </label>
+          <label class="range-line" style="--color: #8b5cf6">
+            <span>Edema m&aacute;ximo <output>${maxEdema}</output></span>
+            <input type="range" name="maxEdema" min="0" max="10" value="${maxEdema}">
+          </label>
+          <button class="panel-button" type="button" data-panel-action="save-goals">Salvar meta</button>
+        </div>
+      `;
+    },
   },
   premium: {
     title: "Plano Premium",
@@ -2037,8 +2042,6 @@ const settingsPanels = {
     content: `
       <div class="settings-form">
         <div class="panel-list">
-          <div class="panel-row"><span>Bloqueio por senha<small>Solicitar ao abrir o app</small></span><label class="switch"><input type="checkbox" checked><i></i></label></div>
-          <div class="panel-row"><span>Dados an&ocirc;nimos<small>Ajudar a melhorar os insights</small></span><label class="switch"><input type="checkbox"><i></i></label></div>
           <button type="button" data-settings-panel="change-password">Alterar senha</button>
           <button type="button" data-settings-panel="delete-account">Apagar conta e dados</button>
         </div>
@@ -2094,14 +2097,9 @@ const settingsPanels = {
     content: `
       <div class="settings-form">
         <div class="panel-list">
-          <button type="button" data-panel-action="faq">Perguntas frequentes</button>
-          <button type="button" data-panel-action="contact">Falar com suporte</button>
-          <button type="button" data-panel-action="tutorial">Ver tutorial do app</button>
+          <a href="https://radarlipedema.com.br/#duvidas" target="_blank" rel="noopener">Perguntas frequentes</a>
+          <a href="mailto:hertima.suporte@gmail.com">Falar com suporte</a>
         </div>
-        <article class="settings-mini-card">
-          <strong>Suporte priorit&aacute;rio</strong>
-          <p>Tempo estimado de resposta: 2 horas.</p>
-        </article>
       </div>
     `,
   },
@@ -3129,9 +3127,6 @@ settingsPanelContent.addEventListener("click", (event) => {
     "export-json": "JSON exportado",
     "export-pdf": "PDF exportado",
     "export-clinical-pdf": "Relatório para o médico exportado",
-    faq: "FAQ aberta",
-    contact: "Suporte aberto",
-    tutorial: "Tutorial iniciado",
     "save-pain": "Dor registrada",
     "save-edema": "Edema registrado",
     "save-measures": "Medidas salvas",

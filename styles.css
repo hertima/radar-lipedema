@@ -3165,6 +3165,7 @@ input[type="range"] {
 }
 
 .panel-list button,
+.panel-list a,
 .panel-list .panel-row {
   display: flex;
   align-items: center;
@@ -3179,6 +3180,8 @@ input[type="range"] {
   text-align: left;
   font-size: 13px;
   font-weight: 820;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
 .panel-list > :first-child {
