@@ -2746,6 +2746,42 @@ const registerPanels = {
       `;
     },
   },
+  "diet-guide": {
+    title: "Alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria",
+    render() {
+      return `
+        <div class="smart-register-panel diet-guide-panel">
+          <p class="panel-question">Orienta&ccedil;&otilde;es gerais baseadas em material da Associa&ccedil;&atilde;o Brasileira de Lipedema (ABL) e do Dr. Alexandre Amato. N&atilde;o substitui acompanhamento com nutricionista.</p>
+
+          <p class="section-label">Priorize</p>
+          <div class="panel-list checklist-panel diet-guide-list">
+            <div class="panel-row"><span>Peixes gordurosos<small>Salm&atilde;o, cavala, sardinha, truta &mdash; ricos em &ocirc;mega-3</small></span></div>
+            <div class="panel-row"><span>Frutas e vegetais coloridos<small>Frutas vermelhas, ma&ccedil;&atilde;, br&oacute;colis, espinafre, couve</small></span></div>
+            <div class="panel-row"><span>Castanhas e sementes<small>Amêndoas, nozes, chia, linha&ccedil;a</small></span></div>
+            <div class="panel-row"><span>Gr&atilde;os integrais<small>Quinoa, aveia, arroz integral</small></span></div>
+            <div class="panel-row"><span>Temperos anti-inflamat&oacute;rios<small>A&ccedil;afr&atilde;o (curcumina), gengibre, alho</small></span></div>
+            <div class="panel-row"><span>Azeite de oliva extravirgem<small>Principal fonte de gordura</small></span></div>
+          </div>
+
+          <p class="section-label">Evite ou reduza</p>
+          <div class="panel-list checklist-panel diet-guide-list">
+            <div class="panel-row"><span>Ultraprocessados e frituras<small>Salgadinhos, fast food</small></span></div>
+            <div class="panel-row"><span>A&ccedil;&uacute;car refinado<small>Doces, sobremesas, bebidas a&ccedil;ucaradas</small></span></div>
+            <div class="panel-row"><span>&Oacute;leos vegetais refinados<small>Soja, milho, girassol &mdash; excesso de &ocirc;mega-6</small></span></div>
+            <div class="panel-row"><span>Carne vermelha em excesso<small>Especialmente grelhada ou processada</small></span></div>
+            <div class="panel-row"><span>&Aacute;lcool em excesso</span></div>
+          </div>
+
+          <article class="mls-applicability-card">
+            <p><strong>Distribui&ccedil;&atilde;o sugerida:</strong> 40&ndash;50% carboidratos, ~30% gorduras, 20&ndash;30% prote&iacute;nas, com aten&ccedil;&atilde;o &agrave; ingest&atilde;o de fibras (cerca de 40g/dia).</p>
+          </article>
+
+          <p class="settings-hint">Isso &eacute; orienta&ccedil;&atilde;o geral, n&atilde;o um plano individual. Sensibilidades a l&aacute;cteos ou gl&uacute;ten variam de pessoa pra pessoa &mdash; o ideal &eacute; ajustar com um nutricionista que conhe&ccedil;a lipedema.</p>
+          <button class="panel-button secondary" type="button" data-open-register-panel="habits">Voltar</button>
+        </div>
+      `;
+    },
+  },
   habits: {
     title: "Registrar h&aacute;bitos",
     render() {
@@ -2758,6 +2794,7 @@ const registerPanels = {
             <div class="panel-row" data-habit-stepper="sleep" data-value="7" data-min="0" data-max="12" data-step-size="0.5" data-unit="horas"><span>Sono<small data-habit-value>7 horas</small></span><span class="stepper-inline"><button type="button" data-habit-step="-1">-</button><button type="button" data-habit-step="1">+</button></span></div>
             <div class="panel-row"><span>Alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria<small>Marcada no dia</small></span><label class="switch"><input type="checkbox" name="antiInflammatoryDiet"><i></i></label></div>
           </div>
+          <button class="text-button diet-guide-link" type="button" data-open-register-panel="diet-guide">O que &eacute; alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria? Ver orienta&ccedil;&otilde;es</button>
           <button class="panel-button" type="button" data-panel-action="save-habits">Salvar h&aacute;bitos</button>
         </div>
       `;
@@ -3389,6 +3426,12 @@ settingsPanelContent.addEventListener("click", (event) => {
   const nestedPanelTrigger = event.target.closest("[data-settings-panel]");
   if (nestedPanelTrigger) {
     openSettingsPanel(nestedPanelTrigger.dataset.settingsPanel);
+    return;
+  }
+
+  const nestedRegisterTrigger = event.target.closest("[data-open-register-panel]");
+  if (nestedRegisterTrigger) {
+    openRegisterPanel(nestedRegisterTrigger.dataset.openRegisterPanel);
     return;
   }
 
