@@ -1984,6 +1984,43 @@ input[type="range"] {
   fill: #ffd4e7;
 }
 
+.phase-folicular {
+  fill: #bfeadb;
+}
+
+.phase-ovulatoria {
+  fill: #ffe6a8;
+}
+
+.phase-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 3px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.phase-dot.phase-lutea {
+  background: #a373e8;
+  opacity: 1;
+}
+
+.phase-dot.phase-menstrual {
+  background: #f43f82;
+  opacity: 1;
+}
+
+.phase-dot.phase-folicular {
+  background: #2fb98c;
+  opacity: 1;
+}
+
+.phase-dot.phase-ovulatoria {
+  background: #e0a415;
+  opacity: 1;
+}
+
 .symptom-area {
   transition: opacity 0.18s ease;
 }

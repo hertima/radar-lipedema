@@ -586,6 +586,25 @@ function renderSymptomChart(history) {
   const xFor = (index) => (points.length <= 1 ? (xStart + xEnd) / 2 : xStart + ((xEnd - xStart) * index) / (points.length - 1));
   const yFor = (value) => yBottom - (value / 10) * (yBottom - yTop);
 
+  const phaseClassMap = { Menstrual: "phase-menstrual", "Folicular": "phase-folicular", "Ovulatória": "phase-ovulatoria", "Lútea": "phase-lutea" };
+  const pointPhases = points.map((point) => (currentProfile?.lastPeriodStart ? computeCycleDayInfo(point.date, currentProfile)?.phase : null));
+
+  if (points.length && currentProfile?.lastPeriodStart) {
+    const xPositions = points.map((_, index) => xFor(index));
+    const bandsHtml = points
+      .map((_, index) => {
+        const phase = pointPhases[index];
+        if (!phase) {
+          return "";
+        }
+        const left = index === 0 ? xStart : (xPositions[index - 1] + xPositions[index]) / 2;
+        const right = index === points.length - 1 ? xEnd : (xPositions[index] + xPositions[index + 1]) / 2;
+        return `<rect class="phase ${phaseClassMap[phase]}" x="${left.toFixed(1)}" y="${yTop}" width="${Math.max(0, right - left).toFixed(1)}" height="${yBottom - yTop}"></rect>`;
+      })
+      .join("");
+    svg.insertAdjacentHTML("afterbegin", bandsHtml);
+  }
+
   ["dor", "edema", "sensibilidade", "humor"].forEach((key) => {
     const linePath = svg.querySelector(`path.line[data-series="${key}"]`);
     const dotsGroup = svg.querySelector(`g.dots[data-series="${key}"]`);
@@ -611,7 +630,13 @@ function renderSymptomChart(history) {
   const labelsRow = document.querySelector(".phase-labels");
   if (labelsRow) {
     labelsRow.innerHTML = points.length
-      ? points.map((point) => `<span>${point.date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>`).join("")
+      ? points
+          .map((point, index) => {
+            const phase = pointPhases[index];
+            const dot = phase ? `<i class="phase-dot ${phaseClassMap[phase]}" aria-hidden="true"></i>` : "";
+            return `<span>${dot}${point.date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>`;
+          })
+          .join("")
       : "<span>Sem registros ainda</span>";
   }
 }
