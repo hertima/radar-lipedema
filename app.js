@@ -561,6 +561,31 @@ function computeBruisingInsight() {
   };
 }
 
+const mlsItemPoints = {
+  hormonal: 2,
+  resistente: 4,
+  dorPressao: 3,
+  sensibilidadeToque: 2,
+  hematomasFrio: 2,
+  pesoVolume: 2,
+  dorRepouso: 4,
+  dorPalpacao: 4,
+  disproporcao: 4,
+  pernasColuna: 3,
+  peleNodular: 2,
+  ortopedico: 4,
+};
+
+function mlsStageFor(score) {
+  if (score > 30) {
+    return { stage: 3, label: "Est&aacute;gio 3 &mdash; Lipedema avan&ccedil;ado" };
+  }
+  if (score >= 15) {
+    return { stage: 2, label: "Est&aacute;gio 2 &mdash; Lipedema manifesto" };
+  }
+  return { stage: 1, label: "Est&aacute;gio 1 &mdash; Lipedema inicial" };
+}
+
 function computeTreatmentAdherence() {
   const entries = recordHistory.filter((record) => record.recordType === "save-treatments");
   const total = entries.length;
@@ -989,6 +1014,7 @@ const recordTypeLabels = {
   "save-cycle-record": "Ciclo",
   "save-pain": "Dor detalhada",
   "save-photos": "Fotos",
+  "save-mls": "Munich Lipedema Score",
 };
 
 function buildPremiumDataset() {
@@ -2421,6 +2447,57 @@ const registerPanels = {
       `;
     },
   },
+  mls: {
+    title: "Munich Lipedema Score",
+    render() {
+      const lastMls = [...recordHistory].reverse().find((record) => record.recordType === "save-mls");
+      const items = lastMls?.payload?.fields?.items || {};
+      const subcutis = lastMls?.payload?.fields?.subcutis ?? "0";
+      const checked = (key) => (items[key] ? " checked" : "");
+      const initialScore = Object.entries(mlsItemPoints).reduce((total, [key, points]) => total + (items[key] ? points : 0), Number(subcutis) || 0);
+      const initialStage = mlsStageFor(initialScore);
+      return `
+        <div class="smart-register-panel mls-panel">
+          <p class="panel-question">Autoavalia&ccedil;&atilde;o baseada no Munich Lipedema Score (von Lukowicz, Wagner &amp; Bauer, 2019) &mdash; n&atilde;o substitui exame cl&iacute;nico, ultrassom ou diagn&oacute;stico m&eacute;dico.</p>
+          <article class="mls-score-card">
+            <strong data-mls-score>${initialScore}</strong><span>/40 pontos</span>
+            <p data-mls-stage>${initialStage.label}</p>
+          </article>
+          <p class="section-label">Hist&oacute;rico</p>
+          <div class="panel-list checklist-panel">
+            <label class="panel-row"><span>In&iacute;cio em fase de mudan&ccedil;a hormonal (puberdade, gravidez, menopausa)<small>2 pontos</small></span><input type="checkbox" data-mls-item="hormonal" data-mls-points="2"${checked("hormonal")}></label>
+            <label class="panel-row"><span>Circunfer&ecirc;ncia ou forma dos membros n&atilde;o muda com dieta ou exerc&iacute;cio<small>4 pontos</small></span><input type="checkbox" data-mls-item="resistente" data-mls-points="4"${checked("resistente")}></label>
+          </div>
+          <p class="section-label">Queixas nas &aacute;reas afetadas</p>
+          <div class="panel-list checklist-panel">
+            <label class="panel-row"><span>Dor &agrave; press&atilde;o ou ao esfor&ccedil;o<small>3 pontos</small></span><input type="checkbox" data-mls-item="dorPressao" data-mls-points="3"${checked("dorPressao")}></label>
+            <label class="panel-row"><span>Sensibilidade &agrave; press&atilde;o e ao toque<small>2 pontos</small></span><input type="checkbox" data-mls-item="sensibilidadeToque" data-mls-points="2"${checked("sensibilidadeToque")}></label>
+            <label class="panel-row"><span>Manchas roxas com facilidade e sensa&ccedil;&atilde;o de frio<small>2 pontos</small></span><input type="checkbox" data-mls-item="hematomasFrio" data-mls-points="2"${checked("hematomasFrio")}></label>
+            <label class="panel-row"><span>Sensa&ccedil;&atilde;o de peso ou piora do volume ao longo do dia ou com calor<small>2 pontos</small></span><input type="checkbox" data-mls-item="pesoVolume" data-mls-points="2"${checked("pesoVolume")}></label>
+            <label class="panel-row"><span>Dor em repouso<small>4 pontos</small></span><input type="checkbox" data-mls-item="dorRepouso" data-mls-points="4"${checked("dorRepouso")}></label>
+            <label class="panel-row"><span>Dor ao toque/palpa&ccedil;&atilde;o durante exame<small>4 pontos</small></span><input type="checkbox" data-mls-item="dorPalpacao" data-mls-points="4"${checked("dorPalpacao")}></label>
+          </div>
+          <p class="section-label">Morfologia</p>
+          <div class="panel-list checklist-panel">
+            <label class="panel-row"><span>Diferen&ccedil;a desproporcional entre corpo superior e inferior (tamanhos de roupa diferentes)<small>4 pontos</small></span><input type="checkbox" data-mls-item="disproporcao" data-mls-points="4"${checked("disproporcao")}></label>
+            <label class="panel-row"><span>Pernas em formato de coluna, sem defini&ccedil;&atilde;o na regi&atilde;o do tornozelo<small>3 pontos</small></span><input type="checkbox" data-mls-item="pernasColuna" data-mls-points="3"${checked("pernasColuna")}></label>
+            <label class="panel-row"><span>Irregularidades na pele das coxas ou gordura endurecida/nodular<small>2 pontos</small></span><input type="checkbox" data-mls-item="peleNodular" data-mls-points="2"${checked("peleNodular")}></label>
+            <label class="panel-row"><span>Altera&ccedil;&otilde;es ortop&eacute;dicas associadas (ex.: joelho valgo)<small>4 pontos</small></span><input type="checkbox" data-mls-item="ortopedico" data-mls-points="4"${checked("ortopedico")}></label>
+          </div>
+          <label class="settings-field">Espessura do subcut&acirc;neo acima do tornozelo <small>(somente se voc&ecirc; tiver essa medida de um exame)</small>
+            <select data-mls-subcutis>
+              <option value="0"${subcutis === "0" ? " selected" : ""}>N&atilde;o sei / menos de 12mm</option>
+              <option value="2"${subcutis === "2" ? " selected" : ""}>12 a 15mm</option>
+              <option value="3"${subcutis === "3" ? " selected" : ""}>15 a 20mm</option>
+              <option value="4"${subcutis === "4" ? " selected" : ""}>Mais de 20mm</option>
+            </select>
+          </label>
+          <p class="settings-hint">Esse score foi validado em pacientes sem linfedema relevante (sinal de Stemmer negativo) e sem obesidade com IMC acima de 40. Use como refer&ecirc;ncia para conversar com seu m&eacute;dico &mdash; n&atilde;o &eacute; um diagn&oacute;stico.</p>
+          <button class="panel-button" type="button" data-panel-action="save-mls">Salvar avalia&ccedil;&atilde;o</button>
+        </div>
+      `;
+    },
+  },
   edema: {
     title: "Registrar edema",
     render() {
@@ -3114,6 +3191,22 @@ settingsPanelContent.addEventListener("input", (event) => {
 });
 
 settingsPanelContent.addEventListener("change", (event) => {
+  const mlsField = event.target.closest("[data-mls-item], [data-mls-subcutis]");
+  if (mlsField) {
+    const subcutisPoints = Number(settingsPanelContent.querySelector("[data-mls-subcutis]")?.value || 0);
+    const itemsScore = Array.from(settingsPanelContent.querySelectorAll("[data-mls-item]:checked")).reduce(
+      (total, input) => total + Number(input.dataset.mlsPoints),
+      0
+    );
+    const score = itemsScore + subcutisPoints;
+    const stage = mlsStageFor(score);
+    const scoreEl = settingsPanelContent.querySelector("[data-mls-score]");
+    const stageEl = settingsPanelContent.querySelector("[data-mls-stage]");
+    if (scoreEl) scoreEl.textContent = score;
+    if (stageEl) stageEl.innerHTML = stage.label;
+    return;
+  }
+
   const photoInput = event.target.closest("[data-photo-input]");
   if (!photoInput) {
     return;
@@ -3405,6 +3498,24 @@ settingsPanelContent.addEventListener("click", (event) => {
       lastPeriodStart,
     }).then(() => loadServerState());
     showToast(messages[actionName]);
+    closeSettingsPanel();
+    return;
+  }
+
+  if (actionName === "save-mls") {
+    const items = {};
+    settingsPanelContent.querySelectorAll("[data-mls-item]").forEach((input) => {
+      items[input.dataset.mlsItem] = input.checked;
+    });
+    const subcutis = settingsPanelContent.querySelector("[data-mls-subcutis]")?.value || "0";
+    const score = Object.entries(mlsItemPoints).reduce((total, [key, points]) => total + (items[key] ? points : 0), Number(subcutis));
+    const stage = mlsStageFor(score);
+
+    saveRecordToServer("save-mls", {
+      fields: { items, subcutis, score, stage: stage.stage },
+      savedAt: new Date().toISOString(),
+    }).then(() => loadServerState());
+    showToast(`MLS: ${score}/40 pontos`);
     closeSettingsPanel();
     return;
   }
