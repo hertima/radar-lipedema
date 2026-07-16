@@ -819,6 +819,26 @@ app.get("/api/records", requireAuth, asyncRoute(async (request, response) => {
   response.json({ ok: true, records: result.rows });
 }));
 
+app.delete("/api/records/:id", requireAuth, asyncRoute(async (request, response) => {
+  const id = Number(request.params.id);
+  if (!Number.isInteger(id)) {
+    response.status(400).json({ ok: false, error: "Registro inválido." });
+    return;
+  }
+
+  const result = await pool.query(
+    "delete from records where id = $1 and profile_id = $2 returning id",
+    [id, request.userId]
+  );
+
+  if (!result.rows.length) {
+    response.status(404).json({ ok: false, error: "Registro não encontrado." });
+    return;
+  }
+
+  response.json({ ok: true });
+}));
+
 app.post("/api/photos", requireAuth, asyncRoute(async (request, response) => {
   const slot = cleanText(request.body.slot, "", 40);
   const imageDataUrl = cleanText(request.body.imageDataUrl, "", 20_000_000);
