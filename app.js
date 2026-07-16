@@ -841,12 +841,15 @@ function renderGamification(history) {
   const level = Math.floor(xp / xpPerLevel) + 1;
   const xpIntoLevel = xp % xpPerLevel;
   const insightCount = computeInsights(history).length;
+  const lutealEntries = currentProfile?.lastPeriodStart
+    ? history.filter((entry) => computeCycleDayInfo(entry.date, currentProfile)?.phase === "Lútea").length
+    : 0;
 
   const achievements = {
     "primeiro-registro": recordHistory.length >= 1,
     "sete-dias": streak >= 7,
     exploradora: recordHistory.length >= 10,
-    "fase-lutea": false,
+    "fase-lutea": lutealEntries >= 3,
     padroes: insightCount >= 3,
     mestre: recordHistory.length >= 30,
   };
