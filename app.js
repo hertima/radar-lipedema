@@ -895,7 +895,116 @@ function renderDynamicData() {
   renderCycleCard(currentProfile);
   renderCycleTimeline(currentProfile);
   updatePremiumSummaries();
+  renderReminderBanner();
 }
+
+function dismissedRemindersToday() {
+  try {
+    const key = `dismissedReminders:${new Date().toISOString().slice(0, 10)}`;
+    return { key, list: JSON.parse(localStorage.getItem(key) || "[]") };
+  } catch (error) {
+    return { key: "", list: [] };
+  }
+}
+
+function computeActiveReminders() {
+  const reminders = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayKey = today.toISOString().slice(0, 10);
+
+  if (currentProfile?.reminderDailyEnabled !== false) {
+    const hasLoggedToday = getDailyRegisters().some((entry) => entry.date.toISOString().slice(0, 10) === todayKey);
+    if (!hasLoggedToday) {
+      reminders.push({
+        id: "daily",
+        icon: "i-edit",
+        color: "pink",
+        text: "Voc&ecirc; ainda n&atilde;o registrou seus sintomas hoje.",
+        panel: "pain",
+      });
+    }
+  }
+
+  const garmentLastReplacedAt = currentProfile?.garmentLastReplacedAt ? String(currentProfile.garmentLastReplacedAt).slice(0, 10) : null;
+  const daysSinceReplaced = garmentLastReplacedAt
+    ? Math.floor((Date.now() - new Date(`${garmentLastReplacedAt}T00:00:00`).getTime()) / 86_400_000)
+    : null;
+  if (daysSinceReplaced !== null && daysSinceReplaced >= 120) {
+    reminders.push({
+      id: "garment",
+      icon: "i-drop",
+      color: "orange",
+      text: `J&aacute; fazem ${daysSinceReplaced} dias desde a &uacute;ltima troca da sua meia de compress&atilde;o.`,
+      panel: "treatments",
+    });
+  }
+
+  if (currentProfile?.reminderCycleAlertEnabled !== false) {
+    const info = computeCycleDayInfo(today, currentProfile);
+    if (info) {
+      const daysUntilNext = info.cycleLength - info.cycleDay + 1;
+      if (daysUntilNext <= 1) {
+        reminders.push({
+          id: "cycle",
+          icon: "i-calendar",
+          color: "purple",
+          text: "Previs&atilde;o: seu ciclo deve come&ccedil;ar hoje ou amanh&atilde;.",
+          panel: "cycle-record",
+        });
+      }
+    }
+  }
+
+  return reminders;
+}
+
+function renderReminderBanner() {
+  const container = document.querySelector("[data-reminder-banner]");
+  const badge = document.querySelector("[data-reminder-badge]");
+  if (!container) {
+    return;
+  }
+
+  const { list: dismissed } = dismissedRemindersToday();
+  const reminders = computeActiveReminders().filter((reminder) => !dismissed.includes(reminder.id));
+
+  if (badge) {
+    badge.hidden = reminders.length === 0;
+  }
+
+  container.innerHTML = reminders
+    .map(
+      (reminder) => `
+        <article class="reminder-banner-item ${reminder.color}" data-reminder-panel="${reminder.panel}">
+          <span class="reminder-banner-icon"><svg class="icon"><use href="#${reminder.icon}"></use></svg></span>
+          <p>${reminder.text}</p>
+          <button type="button" data-reminder-dismiss="${reminder.id}" aria-label="Dispensar lembrete">
+            <svg class="icon"><use href="#i-check"></use></svg>
+          </button>
+        </article>
+      `
+    )
+    .join("");
+}
+
+document.addEventListener("click", (event) => {
+  const dismissButton = event.target.closest("[data-reminder-dismiss]");
+  if (dismissButton) {
+    const { key, list } = dismissedRemindersToday();
+    const id = dismissButton.dataset.reminderDismiss;
+    if (key && !list.includes(id)) {
+      localStorage.setItem(key, JSON.stringify([...list, id]));
+    }
+    renderReminderBanner();
+    return;
+  }
+
+  const reminderItem = event.target.closest("[data-reminder-panel]");
+  if (reminderItem) {
+    openRegisterPanel(reminderItem.dataset.reminderPanel);
+  }
+});
 
 function formatDelta(value, suffix = "") {
   if (value === null) {

@@ -426,6 +426,7 @@ h2 {
 }
 
 .icon-button {
+  position: relative;
   display: grid;
   place-items: center;
   width: 40px;
@@ -441,6 +442,82 @@ h2 {
 }
 
 .icon-button.success {
+  color: var(--purple);
+}
+
+.icon-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--pink);
+  border: 2px solid #fff;
+}
+
+.reminder-banner-list {
+  display: grid;
+  gap: 10px;
+}
+
+.reminder-banner-item {
+  display: grid;
+  grid-template-columns: 36px 1fr 32px;
+  align-items: center;
+  gap: 12px;
+  border-radius: 16px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #f0e7f5;
+  box-shadow: 0 10px 22px rgba(55, 25, 80, .04);
+  cursor: pointer;
+}
+
+.reminder-banner-item p {
+  margin: 0;
+  color: #2c2335;
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.reminder-banner-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+}
+
+.reminder-banner-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.reminder-banner-item.pink .reminder-banner-icon {
+  color: #f43f82;
+  background: #fff0f6;
+}
+
+.reminder-banner-item.orange .reminder-banner-icon {
+  color: #f59e2e;
+  background: #fff4df;
+}
+
+.reminder-banner-item.purple .reminder-banner-icon {
+  color: #6e34d8;
+  background: #eee6ff;
+}
+
+.reminder-banner-item [data-reminder-dismiss] {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--soft);
   color: var(--purple);
 }
 
