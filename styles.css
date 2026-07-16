@@ -632,6 +632,41 @@ h2 {
   font-size: 21px;
 }
 
+.mls-home-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.mls-home-card strong {
+  display: inline;
+  color: var(--purple);
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.mls-home-card > div > span {
+  display: inline;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 13px;
+  margin-left: 2px;
+}
+
+.mls-home-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mls-home-card .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
 .cycle-ring {
   width: 74px;
   height: 74px;

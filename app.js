@@ -578,12 +578,12 @@ const mlsItemPoints = {
 
 function mlsStageFor(score) {
   if (score > 30) {
-    return { stage: 3, label: "Est&aacute;gio 3 &mdash; Lipedema avan&ccedil;ado" };
+    return { stage: 3, label: "Est&aacute;gio 3 &mdash; Lipedema avan&ccedil;ado", plainLabel: "Estágio 3 — Lipedema avançado" };
   }
   if (score >= 15) {
-    return { stage: 2, label: "Est&aacute;gio 2 &mdash; Lipedema manifesto" };
+    return { stage: 2, label: "Est&aacute;gio 2 &mdash; Lipedema manifesto", plainLabel: "Estágio 2 — Lipedema manifesto" };
   }
-  return { stage: 1, label: "Est&aacute;gio 1 &mdash; Lipedema inicial" };
+  return { stage: 1, label: "Est&aacute;gio 1 &mdash; Lipedema inicial", plainLabel: "Estágio 1 — Lipedema inicial" };
 }
 
 function computeTreatmentAdherence() {
@@ -1161,6 +1161,27 @@ function renderDynamicData() {
   renderCycleTimeline(currentProfile);
   updatePremiumSummaries();
   renderReminderBanner();
+  renderMlsHomeCard();
+}
+
+function renderMlsHomeCard() {
+  const scoreEl = document.querySelector("[data-mls-home-score]");
+  const stageEl = document.querySelector("[data-mls-home-stage]");
+  if (!scoreEl || !stageEl) {
+    return;
+  }
+
+  const lastMls = [...recordHistory].reverse().find((record) => record.recordType === "save-mls");
+  if (!lastMls) {
+    scoreEl.textContent = "--";
+    stageEl.textContent = "Toque para fazer sua autoavaliação";
+    return;
+  }
+
+  const score = Number(lastMls.payload?.fields?.score) || 0;
+  const stage = mlsStageFor(score);
+  scoreEl.textContent = score;
+  stageEl.innerHTML = `${stage.label} — toque para reavaliar`;
 }
 
 function dismissedRemindersToday() {
@@ -1966,14 +1987,27 @@ function createClinicalReportPdf() {
   commands.push(pdfText("Relatório para acompanhamento médico", 42, 786, 13, ink, "F2"));
   commands.push(pdfText(`Gerado em ${data.generatedAt}`, 42, 769, 9, muted));
 
+  const lastMls = [...recordHistory].reverse().find((record) => record.recordType === "save-mls");
+  const mlsScore = lastMls ? Number(lastMls.payload?.fields?.score) || 0 : null;
+  const mlsStageLabel = mlsScore !== null ? mlsStageFor(mlsScore).plainLabel : null;
+
   commands.push(pdfText("Dados da paciente", 42, 732, 14, ink, "F2"));
-  commands.push(pdfRect(42, 664, 510, 56, [1, 1, 1], line));
+  commands.push(pdfRect(42, 649, 510, 71, [1, 1, 1], line));
   commands.push(pdfText(`Nome: ${currentProfile?.name || "Não informado"}`, 56, 700, 10, ink));
   commands.push(pdfText(`Estágio: ${currentProfile?.lipedemaStage ? `Estágio ${currentProfile.lipedemaStage}` : "Não informado"}`, 56, 685, 10, ink));
   commands.push(pdfText(`Tipo: ${currentProfile?.lipedemaType ? `Tipo ${currentProfile.lipedemaType}` : "Não informado"}`, 56, 670, 10, ink));
+  commands.push(
+    pdfText(
+      mlsScore !== null ? `Munich Lipedema Score (autoavaliação): ${mlsScore}/40 — ${mlsStageLabel}` : "Munich Lipedema Score: não avaliado ainda",
+      56,
+      655,
+      10,
+      ink
+    )
+  );
 
-  commands.push(pdfText("Aderência ao tratamento conservador", 42, 630, 14, ink, "F2"));
-  commands.push(pdfText(`Baseado em ${adherence.totalEntries} registro(s) de tratamento salvos no período.`, 42, 611, 9, muted));
+  commands.push(pdfText("Aderência ao tratamento conservador", 42, 615, 14, ink, "F2"));
+  commands.push(pdfText(`Baseado em ${adherence.totalEntries} registro(s) de tratamento salvos no período.`, 42, 596, 9, muted));
 
   const adherenceRows = [
     ["Drenagem linfática", pct(adherence.drenagem)],
@@ -1983,7 +2017,7 @@ function createClinicalReportPdf() {
     ["Classe de compressão", currentProfile?.garmentCompressionClass || "Não informado"],
   ];
   adherenceRows.forEach(([label, value], index) => {
-    const y = 585 - index * 30;
+    const y = 570 - index * 30;
     commands.push(pdfRect(42, y, 510, 26, index % 2 === 0 ? [1, 1, 1] : [0.99, 0.97, 1.0], line));
     commands.push(pdfText(label, 56, y + 15, 10, ink));
     commands.push(pdfText(String(value), 470, y + 15, 10, purple, "F2"));
