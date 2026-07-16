@@ -495,7 +495,7 @@ function computeInsights(history) {
 
   insights.push(...computeHabitSymptomInsights());
 
-  return insights.slice(0, 8);
+  return insights;
 }
 
 function computeBruisingInsight() {
