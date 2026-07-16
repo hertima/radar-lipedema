@@ -586,6 +586,22 @@ function mlsStageFor(score) {
   return { stage: 1, label: "Est&aacute;gio 1 &mdash; Lipedema inicial", plainLabel: "Estágio 1 — Lipedema inicial" };
 }
 
+function mlsApplicabilityText(bmiOk, stemmerOk) {
+  if (bmiOk === null && stemmerOk === null) {
+    return "Informe seu IMC e o resultado do sinal de Stemmer para saber se o score se aplica bem ao seu caso.";
+  }
+  if (bmiOk === false) {
+    return "Seu IMC est&aacute; acima de 40 &mdash; o score original n&atilde;o foi validado nessa faixa, pode ser menos preciso pra voc&ecirc;.";
+  }
+  if (stemmerOk === false) {
+    return "Sinal de Stemmer positivo pode indicar linfedema associado &mdash; vale procurar avalia&ccedil;&atilde;o espec&iacute;fica para linfedema al&eacute;m do lipedema.";
+  }
+  if (bmiOk === true && stemmerOk === true) {
+    return "Seu perfil est&aacute; dentro dos crit&eacute;rios do estudo original &mdash; o score tende a ser uma boa refer&ecirc;ncia pro seu caso.";
+  }
+  return "Complete o IMC e o sinal de Stemmer acima para uma avalia&ccedil;&atilde;o completa da aplicabilidade do score.";
+}
+
 function computeTreatmentAdherence() {
   const entries = recordHistory.filter((record) => record.recordType === "save-treatments");
   const total = entries.length;
@@ -2202,6 +2218,9 @@ const settingsPanels = {
               ${goalOptions.map((option) => `<option${option === goal ? " selected" : ""}>${escapeHtml(option)}</option>`).join("")}
             </select>
           </label>
+          <label class="settings-field">Altura <small>(cm — usada para calcular seu IMC)</small>
+            <input name="heightCm" type="number" min="100" max="230" inputmode="numeric" value="${currentProfile?.heightCm || ""}" placeholder="Ex.: 165">
+          </label>
           <label class="settings-field">Estágio do lipedema <small>(conforme diagnóstico médico)</small>
             <select name="lipedemaStage">${buildOptions(stageOptions, stage, true)}</select>
           </label>
@@ -2487,9 +2506,21 @@ const registerPanels = {
       const lastMls = [...recordHistory].reverse().find((record) => record.recordType === "save-mls");
       const items = lastMls?.payload?.fields?.items || {};
       const subcutis = lastMls?.payload?.fields?.subcutis ?? "0";
+      const stemmer = lastMls?.payload?.fields?.stemmer ?? "unknown";
       const checked = (key) => (items[key] ? " checked" : "");
       const initialScore = Object.entries(mlsItemPoints).reduce((total, [key, points]) => total + (items[key] ? points : 0), Number(subcutis) || 0);
       const initialStage = mlsStageFor(initialScore);
+
+      const lastWeightRecord = [...recordHistory].reverse().find((record) => record.recordType === "save-weight");
+      const weightKg = lastWeightRecord ? Number(lastWeightRecord.payload?.weight) : null;
+      const heightCm = currentProfile?.heightCm ? Number(currentProfile.heightCm) : null;
+      const bmi = weightKg && heightCm ? weightKg / (heightCm / 100) ** 2 : null;
+      const bmiText = bmi
+        ? `${bmi.toFixed(1)} (peso e altura do seu perfil)`
+        : "Informe seu peso (Registrar &gt; Peso) e altura (Ajustes &gt; Perfil) para calcular";
+      const bmiOk = bmi === null ? null : bmi < 40;
+      const stemmerOk = stemmer === "unknown" ? null : stemmer === "negative";
+
       return `
         <div class="smart-register-panel mls-panel">
           <p class="panel-question">Autoavalia&ccedil;&atilde;o baseada no Munich Lipedema Score (von Lukowicz, Wagner &amp; Bauer, 2019) &mdash; n&atilde;o substitui exame cl&iacute;nico, ultrassom ou diagn&oacute;stico m&eacute;dico.</p>
@@ -2526,7 +2557,20 @@ const registerPanels = {
               <option value="4"${subcutis === "4" ? " selected" : ""}>Mais de 20mm</option>
             </select>
           </label>
-          <p class="settings-hint">Esse score foi validado em pacientes sem linfedema relevante (sinal de Stemmer negativo) e sem obesidade com IMC acima de 40. Use como refer&ecirc;ncia para conversar com seu m&eacute;dico &mdash; n&atilde;o &eacute; um diagn&oacute;stico.</p>
+          <p class="section-label">O score se aplica ao seu caso?</p>
+          <p class="panel-question">Sinal de Stemmer: tente beliscar e levantar uma prega de pele na base dos dedos do p&eacute; (segundo dedo).</p>
+          <label class="settings-field">
+            <select data-mls-stemmer>
+              <option value="negative"${stemmer === "negative" ? " selected" : ""}>Consigo beliscar uma prega de pele (sinal negativo, t&iacute;pico de lipedema)</option>
+              <option value="positive"${stemmer === "positive" ? " selected" : ""}>N&atilde;o consigo, a pele est&aacute; muito firme (sinal positivo, pode indicar linfedema associado)</option>
+              <option value="unknown"${stemmer === "unknown" ? " selected" : ""}>Ainda n&atilde;o testei</option>
+            </select>
+          </label>
+          <article class="mls-applicability-card">
+            <p><strong>IMC:</strong> <span data-mls-bmi-text>${bmiText}</span></p>
+            <p data-mls-applicability>${mlsApplicabilityText(bmiOk, stemmerOk)}</p>
+          </article>
+          <p class="settings-hint">O Munich Lipedema Score original foi validado em pacientes sem linfedema relevante (sinal de Stemmer negativo) e sem obesidade com IMC acima de 40. Use como refer&ecirc;ncia para conversar com seu m&eacute;dico &mdash; n&atilde;o &eacute; um diagn&oacute;stico.</p>
           <button class="panel-button" type="button" data-panel-action="save-mls">Salvar avalia&ccedil;&atilde;o</button>
         </div>
       `;
@@ -3241,6 +3285,17 @@ settingsPanelContent.addEventListener("change", (event) => {
     return;
   }
 
+  const stemmerField = event.target.closest("[data-mls-stemmer]");
+  if (stemmerField) {
+    const stemmer = stemmerField.value;
+    const stemmerOk = stemmer === "unknown" ? null : stemmer === "negative";
+    const bmiText = settingsPanelContent.querySelector("[data-mls-bmi-text]")?.textContent || "";
+    const bmiOk = bmiText.startsWith("Informe") ? null : parseFloat(bmiText) < 40;
+    const applicabilityEl = settingsPanelContent.querySelector("[data-mls-applicability]");
+    if (applicabilityEl) applicabilityEl.innerHTML = mlsApplicabilityText(bmiOk, stemmerOk);
+    return;
+  }
+
   const photoInput = event.target.closest("[data-photo-input]");
   if (!photoInput) {
     return;
@@ -3282,6 +3337,7 @@ settingsPanelContent.addEventListener("submit", (event) => {
     const lipedemaType = formData.get("lipedemaType") || null;
     const garmentCompressionClass = formData.get("garmentCompressionClass") || null;
     const garmentLastReplacedAt = formData.get("garmentLastReplacedAt") || null;
+    const heightCm = formData.get("heightCm") || null;
     document.querySelector("#home-title").textContent = `Ol\u00e1, ${name}`;
     saveProfileToServer({
       name,
@@ -3292,6 +3348,7 @@ settingsPanelContent.addEventListener("submit", (event) => {
       lipedemaType,
       garmentCompressionClass,
       garmentLastReplacedAt,
+      heightCm,
     }).then(() => loadServerState());
     showToast("Perfil salvo");
     closeSettingsPanel();
@@ -3542,11 +3599,12 @@ settingsPanelContent.addEventListener("click", (event) => {
       items[input.dataset.mlsItem] = input.checked;
     });
     const subcutis = settingsPanelContent.querySelector("[data-mls-subcutis]")?.value || "0";
+    const stemmer = settingsPanelContent.querySelector("[data-mls-stemmer]")?.value || "unknown";
     const score = Object.entries(mlsItemPoints).reduce((total, [key, points]) => total + (items[key] ? points : 0), Number(subcutis));
     const stage = mlsStageFor(score);
 
     saveRecordToServer("save-mls", {
-      fields: { items, subcutis, score, stage: stage.stage },
+      fields: { items, subcutis, stemmer, score, stage: stage.stage },
       savedAt: new Date().toISOString(),
     }).then(() => loadServerState());
     showToast(`MLS: ${score}/40 pontos`);

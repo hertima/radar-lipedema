@@ -498,6 +498,7 @@ app.post("/api/auth/verify-email", rateLimit("verify-email", 10, 10 * 60 * 1000)
             garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
             reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
             reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
+            height_cm as "heightCm",
             updated_at as "updatedAt"
        from profiles where id = $1`,
     [user.id]
@@ -558,6 +559,7 @@ app.get("/api/auth/me", asyncRoute(async (request, response) => {
             garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
             reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
             reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
+            height_cm as "heightCm",
             updated_at as "updatedAt"
        from profiles where id = $1`,
     [userId]
@@ -634,6 +636,7 @@ app.get("/api/bootstrap", requireAuth, asyncRoute(async (request, response) => {
             garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
             reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
             reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
+            height_cm as "heightCm",
             updated_at as "updatedAt"
          from profiles where id = $1`,
       [request.userId]
@@ -703,6 +706,9 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
     reminderTime = request.body.reminderTime;
   }
 
+  const heightRaw = Number(request.body.heightCm);
+  const heightCm = Number.isFinite(heightRaw) ? Math.max(100, Math.min(230, Math.round(heightRaw))) : null;
+
   const result = await pool.query(
     `update profiles set
        name = coalesce(nullif($2, ''), name),
@@ -720,6 +726,7 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
        reminder_time = coalesce($14, reminder_time),
        reminder_cycle_alert_enabled = coalesce($15, reminder_cycle_alert_enabled),
        reminder_weekly_insight_enabled = coalesce($16, reminder_weekly_insight_enabled),
+       height_cm = coalesce($17, height_cm),
        updated_at = now()
      where id = $1
      returning id, name, email, goal, photo_data_url as "photoDataUrl",
@@ -729,11 +736,13 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
                garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
             reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
             reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
+            height_cm as "heightCm",
                updated_at as "updatedAt"`,
     [
       request.userId, name, email, goal, photoDataUrl, cycleLength, periodLength, lastPeriodStart,
       lipedemaStage, lipedemaType, garmentCompressionClass, garmentLastReplacedAt,
       reminderDailyEnabled, reminderTime, reminderCycleAlertEnabled, reminderWeeklyInsightEnabled,
+      heightCm,
     ]
   );
 

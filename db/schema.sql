@@ -51,6 +51,7 @@ alter table profiles add column if not exists reminder_last_daily_sent_on date;
 alter table profiles add column if not exists reminder_last_garment_sent_on date;
 alter table profiles add column if not exists reminder_last_cycle_sent_on date;
 alter table profiles add column if not exists reminder_last_weekly_sent_on date;
+alter table profiles add column if not exists height_cm numeric;
 
 create table if not exists records (
   id bigserial primary key,
