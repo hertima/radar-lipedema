@@ -249,6 +249,133 @@ function computeCyclePhaseInsights() {
   return results;
 }
 
+function compareSymptomGroups(daily, records, extractActive, symptomKey) {
+  const symptomsByDate = new Map();
+  daily.forEach((entry) => {
+    const key = entry.date.toISOString().slice(0, 10);
+    if (!symptomsByDate.has(key)) {
+      symptomsByDate.set(key, []);
+    }
+    symptomsByDate.get(key).push(entry);
+  });
+
+  const pairs = records
+    .map((record) => {
+      const active = extractActive(record);
+      const key = new Date(record.createdAt).toISOString().slice(0, 10);
+      const entries = symptomsByDate.get(key);
+      const symptomValue = entries ? averageOf(entries, symptomKey) : null;
+      return active === null || symptomValue === null ? null : { active, symptomValue };
+    })
+    .filter(Boolean);
+
+  const activeGroup = pairs.filter((pair) => pair.active);
+  const inactiveGroup = pairs.filter((pair) => !pair.active);
+  if (activeGroup.length < 3 || inactiveGroup.length < 3) {
+    return null;
+  }
+
+  const activeAvg = activeGroup.reduce((total, pair) => total + pair.symptomValue, 0) / activeGroup.length;
+  const inactiveAvg = inactiveGroup.reduce((total, pair) => total + pair.symptomValue, 0) / inactiveGroup.length;
+  const diff = +(inactiveAvg - activeAvg).toFixed(1);
+  if (Math.abs(diff) < 1) {
+    return null;
+  }
+
+  return { activeAvg: +activeAvg.toFixed(1), inactiveAvg: +inactiveAvg.toFixed(1), diff, activeCount: activeGroup.length, inactiveCount: inactiveGroup.length };
+}
+
+function medianSplitPredicate(records, extractValue) {
+  const values = records.map(extractValue).filter((value) => value !== null && Number.isFinite(value));
+  if (values.length < 6) {
+    return () => null;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  return (record) => {
+    const value = extractValue(record);
+    return value === null || !Number.isFinite(value) ? null : value >= median;
+  };
+}
+
+function computeHabitSymptomCorrelations() {
+  const daily = getDailyRegisters();
+  if (daily.length < 6) {
+    return [];
+  }
+
+  const treatments = recordHistory.filter((record) => record.recordType === "save-treatments");
+  const habits = recordHistory.filter((record) => record.recordType === "save-habits");
+
+  const factors = [
+    {
+      id: "drenagem",
+      symptomKey: "edema",
+      result: compareSymptomGroups(daily, treatments, (record) => record.payload?.fields?.drenagem === true, "edema"),
+      color: "purple",
+      symptomLabel: "Edema",
+      activeDesc: "com drenagem linfática registrada",
+      inactiveDesc: "sem",
+      actionText: "Agendar ou realizar uma sess&atilde;o de drenagem linf&aacute;tica hoje",
+      lowerIsBetter: true,
+    },
+    {
+      id: "exercicio",
+      symptomKey: "dor",
+      result: compareSymptomGroups(daily, treatments, (record) => record.payload?.fields?.exercicio === true, "dor"),
+      color: "pink",
+      symptomLabel: "Dor",
+      activeDesc: "com exercício registrado",
+      inactiveDesc: "sem",
+      actionText: "Fazer um exerc&iacute;cio leve hoje",
+      lowerIsBetter: true,
+    },
+    {
+      id: "garmentHours",
+      symptomKey: "edema",
+      result: compareSymptomGroups(daily, treatments, medianSplitPredicate(treatments, (record) => Number(record.payload?.fields?.garmentHours)), "edema"),
+      color: "purple",
+      symptomLabel: "Edema",
+      activeDesc: "com mais horas de uso da meia de compressão",
+      inactiveDesc: "com menos uso",
+      actionText: "Usar a meia de compress&atilde;o por mais horas hoje",
+      lowerIsBetter: true,
+    },
+    {
+      id: "water",
+      symptomKey: "edema",
+      result: compareSymptomGroups(daily, habits, medianSplitPredicate(habits, (record) => Number(record.payload?.fields?.water?.value)), "edema"),
+      color: "teal",
+      symptomLabel: "Edema",
+      activeDesc: "com mais água registrada",
+      inactiveDesc: "com menos água",
+      actionText: "Beber mais &aacute;gua hoje",
+      lowerIsBetter: true,
+    },
+    {
+      id: "sleep",
+      symptomKey: "humor",
+      result: compareSymptomGroups(daily, habits, medianSplitPredicate(habits, (record) => Number(record.payload?.fields?.sleep?.value)), "humor"),
+      color: "teal",
+      symptomLabel: "Humor",
+      activeDesc: "com mais horas de sono",
+      inactiveDesc: "com menos sono",
+      actionText: "Priorizar dormir mais hoje",
+      lowerIsBetter: false,
+    },
+  ];
+
+  return factors.filter((factor) => factor.result);
+}
+
+function computeHabitSymptomInsights() {
+  return computeHabitSymptomCorrelations().map((factor) => ({
+    color: factor.color,
+    label: factor.symptomLabel,
+    text: `Nos dias ${factor.activeDesc}, sua m&eacute;dia de ${factor.symptomLabel.toLowerCase()} foi ${factor.result.activeAvg}/10, contra ${factor.result.inactiveAvg}/10 nos dias ${factor.inactiveDesc} — baseado em ${factor.result.activeCount + factor.result.inactiveCount} registros.`,
+  }));
+}
+
 function renderCycleCard(profile) {
   const info = computeCycleInfo(profile);
   const phaseEl = document.querySelector("[data-cycle-phase]");
@@ -366,7 +493,9 @@ function computeInsights(history) {
     insights.push(bruisingInsight);
   }
 
-  return insights.slice(0, 4);
+  insights.push(...computeHabitSymptomInsights());
+
+  return insights.slice(0, 8);
 }
 
 function computeBruisingInsight() {
@@ -422,15 +551,37 @@ function computeRoutineSuggestion() {
     : null;
 
   const items = [];
+  const correlations = computeHabitSymptomCorrelations();
+  const helpsWhenActive = (factor) => (factor.lowerIsBetter ? factor.result.diff > 0 : factor.result.diff < 0);
+  const findHelpfulFactor = (id) => correlations.find((factor) => factor.id === id && helpsWhenActive(factor));
 
-  items.push({ text: "Beber pelo menos 2 litros de &aacute;gua ao longo do dia", reason: "H&aacute;bito de base recomendado para quem tem lipedema." });
+  const waterFactor = findHelpfulFactor("water");
+  items.push(
+    waterFactor
+      ? {
+          text: "Beber mais &aacute;gua hoje",
+          reason: `Nos seus dias com mais &aacute;gua registrada, o edema ficou em ${waterFactor.result.activeAvg}/10 contra ${waterFactor.result.inactiveAvg}/10 nos dias com menos.`,
+        }
+      : { text: "Beber pelo menos 2 litros de &aacute;gua ao longo do dia", reason: "H&aacute;bito de base recomendado para quem tem lipedema." }
+  );
   items.push({ text: "Elevar as pernas por 15 a 20 minutos em algum momento do dia", reason: "Favorece o retorno venoso e linf&aacute;tico." });
 
+  const sleepFactor = findHelpfulFactor("sleep");
+  if (sleepFactor) {
+    items.push({
+      text: "Priorizar dormir mais hoje",
+      reason: `Nos seus dias com mais sono, o humor ficou em ${sleepFactor.result.activeAvg}/10 contra ${sleepFactor.result.inactiveAvg}/10 nos dias com menos sono.`,
+    });
+  }
+
+  const garmentFactor = findHelpfulFactor("garmentHours");
   if (currentProfile?.garmentCompressionClass) {
     if (adherence.avgGarmentHours !== null && adherence.avgGarmentHours < 8) {
       items.push({
         text: "Tentar usar a meia de compress&atilde;o por mais horas hoje",
-        reason: `M&eacute;dia registrada nos &uacute;ltimos dias: ${adherence.avgGarmentHours}h/dia.`,
+        reason: garmentFactor
+          ? `M&eacute;dia registrada: ${adherence.avgGarmentHours}h/dia. Nos dias com mais uso, o edema ficou em ${garmentFactor.result.activeAvg}/10 contra ${garmentFactor.result.inactiveAvg}/10.`
+          : `M&eacute;dia registrada nos &uacute;ltimos dias: ${adherence.avgGarmentHours}h/dia.`,
       });
     } else {
       items.push({
@@ -449,11 +600,15 @@ function computeRoutineSuggestion() {
     });
   }
 
+  const drenagemFactor = findHelpfulFactor("drenagem");
+  const exercicioFactor = findHelpfulFactor("exercicio");
   if (adherence.totalEntries >= 3) {
     if (adherence.drenagem !== null && adherence.drenagem < 40) {
       items.push({
         text: "Agendar ou realizar uma sess&atilde;o de drenagem linf&aacute;tica esta semana",
-        reason: `Presente em apenas ${adherence.drenagem}% dos seus &uacute;ltimos registros de tratamento.`,
+        reason: drenagemFactor
+          ? `Presente em apenas ${adherence.drenagem}% dos seus registros. Nos dias com drenagem, o edema ficou em ${drenagemFactor.result.activeAvg}/10 contra ${drenagemFactor.result.inactiveAvg}/10.`
+          : `Presente em apenas ${adherence.drenagem}% dos seus &uacute;ltimos registros de tratamento.`,
       });
     }
     if (adherence.fisioterapia !== null && adherence.fisioterapia < 40) {
@@ -465,7 +620,9 @@ function computeRoutineSuggestion() {
     if (adherence.exercicio !== null && adherence.exercicio < 40) {
       items.push({
         text: "Fazer uma caminhada leve ou exerc&iacute;cio de baixo impacto",
-        reason: `Presente em apenas ${adherence.exercicio}% dos seus &uacute;ltimos registros de tratamento.`,
+        reason: exercicioFactor
+          ? `Presente em apenas ${adherence.exercicio}% dos seus registros. Nos dias com exerc&iacute;cio, sua dor ficou em ${exercicioFactor.result.activeAvg}/10 contra ${exercicioFactor.result.inactiveAvg}/10.`
+          : `Presente em apenas ${adherence.exercicio}% dos seus &uacute;ltimos registros de tratamento.`,
       });
     }
   } else {
@@ -1664,7 +1821,7 @@ function createPremiumReportPdf() {
 
   commands.push(pdfText("Insights e dicas geradas", 42, 252, 15, ink, "F2"));
   let insightY = 212;
-  data.insights.forEach((insight, index) => {
+  data.insights.slice(0, 4).forEach((insight, index) => {
     commands.push(pdfRect(42, insightY - 8, 510, 36, index === 0 ? softPink : [1, 1, 1], line));
     commands.push(pdfRect(54, insightY + 4, 10, 10, index === 0 ? pink : purple));
     wrapReportLine(insight, 74).slice(0, 2).forEach((lineText, lineIndex) => {
