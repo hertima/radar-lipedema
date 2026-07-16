@@ -363,6 +363,50 @@ function computeHabitSymptomCorrelations() {
       actionText: "Priorizar dormir mais hoje",
       lowerIsBetter: false,
     },
+    {
+      id: "lpg",
+      symptomKey: "edema",
+      result: compareSymptomGroups(daily, treatments, (record) => record.payload?.fields?.lpg === true, "edema"),
+      color: "purple",
+      symptomLabel: "Edema",
+      activeDesc: "com LPG registrado",
+      inactiveDesc: "sem",
+      actionText: "Agendar uma sess&atilde;o de LPG",
+      lowerIsBetter: true,
+    },
+    {
+      id: "pressoterapia",
+      symptomKey: "edema",
+      result: compareSymptomGroups(daily, treatments, (record) => record.payload?.fields?.pressoterapia === true, "edema"),
+      color: "purple",
+      symptomLabel: "Edema",
+      activeDesc: "com pressoterapia registrada",
+      inactiveDesc: "sem",
+      actionText: "Agendar uma sess&atilde;o de pressoterapia",
+      lowerIsBetter: true,
+    },
+    {
+      id: "medicamentos",
+      symptomKey: "dor",
+      result: compareSymptomGroups(daily, treatments, (record) => record.payload?.fields?.medicamentos === true, "dor"),
+      color: "pink",
+      symptomLabel: "Dor",
+      activeDesc: "com medicamentos conforme prescri&ccedil;&atilde;o",
+      inactiveDesc: "sem",
+      actionText: "Verificar com seu m&eacute;dico sobre manter os medicamentos prescritos em dia",
+      lowerIsBetter: true,
+    },
+    {
+      id: "antiInflammatoryDiet",
+      symptomKey: "sensibilidade",
+      result: compareSymptomGroups(daily, habits, (record) => record.payload?.fields?.antiInflammatoryDiet === true, "sensibilidade"),
+      color: "orange",
+      symptomLabel: "Sensibilidade",
+      activeDesc: "com alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria marcada",
+      inactiveDesc: "sem",
+      actionText: "Priorizar alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria hoje",
+      lowerIsBetter: true,
+    },
   ];
 
   return factors.filter((factor) => factor.result);
@@ -573,6 +617,16 @@ function computeRoutineSuggestion() {
       reason: `Nos seus dias com mais sono, o humor ficou em ${sleepFactor.result.activeAvg}/10 contra ${sleepFactor.result.inactiveAvg}/10 nos dias com menos sono.`,
     });
   }
+
+  ["lpg", "pressoterapia", "medicamentos", "antiInflammatoryDiet"].forEach((id) => {
+    const factor = findHelpfulFactor(id);
+    if (factor) {
+      items.push({
+        text: factor.actionText,
+        reason: `Nos seus dias ${factor.activeDesc}, ${factor.symptomLabel.toLowerCase()} ficou em ${factor.result.activeAvg}/10 contra ${factor.result.inactiveAvg}/10 nos dias ${factor.inactiveDesc}.`,
+      });
+    }
+  });
 
   const garmentFactor = findHelpfulFactor("garmentHours");
   if (currentProfile?.garmentCompressionClass) {
