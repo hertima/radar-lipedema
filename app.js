@@ -215,7 +215,7 @@ function computeCyclePhaseInsights() {
     return [];
   }
 
-  const withData = data.phaseAverages.filter((entry) => entry.count > 0);
+  const withData = data.phaseAverages.filter((entry) => entry.count >= 2);
   const results = [];
 
   [
