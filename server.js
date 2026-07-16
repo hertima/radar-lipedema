@@ -236,6 +236,163 @@ async function issueVerificationCode(userId, email) {
   await sendVerificationCode(email, code);
 }
 
+function appBaseUrl() {
+  return process.env.APP_URL || "https://app.radarlipedema.com.br";
+}
+
+async function sendReminderEmail(email, subject, html) {
+  if (!mailTransport) {
+    console.log(`[reminder] ${subject} -> ${email}`);
+    return;
+  }
+
+  await mailTransport.sendMail({
+    from: process.env.MAIL_FROM || "Radar Lipedema <no-reply@radarlipedema.app>",
+    to: email,
+    subject,
+    html,
+  });
+}
+
+function currentBrazilTime() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const date = `${map.year}-${map.month}-${map.day}`;
+  return {
+    date,
+    time: `${map.hour === "24" ? "00" : map.hour}:${map.minute}`,
+    weekday: new Date(`${date}T00:00:00`).getDay(),
+  };
+}
+
+async function runDailySymptomReminderSweep() {
+  const { date, time } = currentBrazilTime();
+  const due = await pool.query(
+    `select p.id, u.email, p.name
+       from profiles p
+       join users u on u.id = p.id
+      where p.reminder_daily_enabled = true
+        and p.reminder_time = $1
+        and u.email_verified = true
+        and (p.reminder_last_daily_sent_on is null or p.reminder_last_daily_sent_on <> $2)`,
+    [time, date]
+  );
+
+  for (const row of due.rows) {
+    await sendReminderEmail(
+      row.email,
+      "Hora de registrar seus sintomas no Radar Lipedema",
+      `<p>Oi${row.name ? `, ${row.name}` : ""}!</p><p>Esse é o seu lembrete diário para registrar dor, edema, sensibilidade e humor de hoje.</p><p><a href="${appBaseUrl()}">Abrir o Radar Lipedema</a></p>`
+    );
+    await pool.query("update profiles set reminder_last_daily_sent_on = $2 where id = $1", [row.id, date]);
+  }
+}
+
+async function runGarmentReminderSweep(date) {
+  const due = await pool.query(
+    `select p.id, u.email, p.name
+       from profiles p
+       join users u on u.id = p.id
+      where p.garment_last_replaced_at is not null
+        and p.garment_last_replaced_at <= (current_date - interval '120 days')
+        and u.email_verified = true
+        and (p.reminder_last_garment_sent_on is null or p.reminder_last_garment_sent_on <= (current_date - interval '14 days'))`
+  );
+
+  for (const row of due.rows) {
+    await sendReminderEmail(
+      row.email,
+      "Hora de trocar sua meia de compressão",
+      `<p>Oi${row.name ? `, ${row.name}` : ""}!</p><p>Já fazem mais de 120 dias desde a última troca registrada da sua meia de compressão. A compressão perde eficácia com o uso — considere trocá-la.</p><p><a href="${appBaseUrl()}">Abrir o Radar Lipedema</a></p>`
+    );
+    await pool.query("update profiles set reminder_last_garment_sent_on = $2 where id = $1", [row.id, date]);
+  }
+}
+
+async function runCycleAlertReminderSweep(date) {
+  const due = await pool.query(
+    `select p.id, u.email, p.name, p.last_period_start as "lastPeriodStart", p.cycle_length as "cycleLength"
+       from profiles p
+       join users u on u.id = p.id
+      where p.reminder_cycle_alert_enabled = true
+        and p.last_period_start is not null
+        and u.email_verified = true
+        and (p.reminder_last_cycle_sent_on is null or p.reminder_last_cycle_sent_on <> $1)`,
+    [date]
+  );
+
+  for (const row of due.rows) {
+    const cycleLength = row.cycleLength || 28;
+    const start = new Date(`${String(row.lastPeriodStart).slice(0, 10)}T00:00:00`);
+    const today = new Date(`${date}T00:00:00`);
+    const daysSinceStart = Math.round((today - start) / 86_400_000);
+    const cycleDay = (((daysSinceStart % cycleLength) + cycleLength) % cycleLength) + 1;
+    const daysUntilNext = cycleLength - cycleDay + 1;
+
+    if (daysUntilNext === 1) {
+      await sendReminderEmail(
+        row.email,
+        "Previsão: seu ciclo deve começar amanhã",
+        `<p>Oi${row.name ? `, ${row.name}` : ""}!</p><p>Baseado no seu último registro, a previsão é que seu ciclo comece amanhã. Fique de olho nos seus sintomas.</p><p><a href="${appBaseUrl()}">Abrir o Radar Lipedema</a></p>`
+      );
+      await pool.query("update profiles set reminder_last_cycle_sent_on = $2 where id = $1", [row.id, date]);
+    }
+  }
+}
+
+async function runWeeklyInsightReminderSweep(date) {
+  const due = await pool.query(
+    `select p.id, u.email, p.name
+       from profiles p
+       join users u on u.id = p.id
+      where p.reminder_weekly_insight_enabled = true
+        and u.email_verified = true
+        and (p.reminder_last_weekly_sent_on is null or p.reminder_last_weekly_sent_on <> $1)`,
+    [date]
+  );
+
+  for (const row of due.rows) {
+    await sendReminderEmail(
+      row.email,
+      "Seu resumo semanal - Radar Lipedema",
+      `<p>Oi${row.name ? `, ${row.name}` : ""}!</p><p>Abra o app para ver seu resumo de sintomas e insights da semana.</p><p><a href="${appBaseUrl()}">Abrir o Radar Lipedema</a></p>`
+    );
+    await pool.query("update profiles set reminder_last_weekly_sent_on = $2 where id = $1", [row.id, date]);
+  }
+}
+
+async function runDailyChecksSweep() {
+  const { date, weekday } = currentBrazilTime();
+  await runGarmentReminderSweep(date);
+  await runCycleAlertReminderSweep(date);
+  if (weekday === 0) {
+    await runWeeklyInsightReminderSweep(date);
+  }
+}
+
+function startReminderScheduler() {
+  setInterval(() => {
+    runDailySymptomReminderSweep().catch((error) => console.warn("Falha no lembrete diário de sintomas:", error.message));
+  }, 60 * 1000).unref();
+
+  let lastChecksDate = null;
+  setInterval(() => {
+    const { date, time } = currentBrazilTime();
+    if (time === "09:00" && lastChecksDate !== date) {
+      lastChecksDate = date;
+      runDailyChecksSweep().catch((error) => console.warn("Falha nos lembretes diários:", error.message));
+    }
+  }, 60 * 1000).unref();
+}
+
 async function latestPhotos(profileId) {
   const result = await pool.query(
     `select distinct on (slot) slot, image_data_url as "imageDataUrl", notes, created_at as "createdAt"
@@ -339,6 +496,8 @@ app.post("/api/auth/verify-email", rateLimit("verify-email", 10, 10 * 60 * 1000)
             last_backup_at as "lastBackupAt",
             lipedema_stage as "lipedemaStage", lipedema_type as "lipedemaType",
             garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
+            reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
+            reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
             updated_at as "updatedAt"
        from profiles where id = $1`,
     [user.id]
@@ -397,6 +556,8 @@ app.get("/api/auth/me", asyncRoute(async (request, response) => {
             last_backup_at as "lastBackupAt",
             lipedema_stage as "lipedemaStage", lipedema_type as "lipedemaType",
             garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
+            reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
+            reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
             updated_at as "updatedAt"
        from profiles where id = $1`,
     [userId]
@@ -471,6 +632,8 @@ app.get("/api/bootstrap", requireAuth, asyncRoute(async (request, response) => {
             last_backup_at as "lastBackupAt",
             lipedema_stage as "lipedemaStage", lipedema_type as "lipedemaType",
             garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
+            reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
+            reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
             updated_at as "updatedAt"
          from profiles where id = $1`,
       [request.userId]
@@ -531,6 +694,15 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
     }
   }
 
+  const reminderDailyEnabled = typeof request.body.reminderDailyEnabled === "boolean" ? request.body.reminderDailyEnabled : null;
+  const reminderCycleAlertEnabled = typeof request.body.reminderCycleAlertEnabled === "boolean" ? request.body.reminderCycleAlertEnabled : null;
+  const reminderWeeklyInsightEnabled = typeof request.body.reminderWeeklyInsightEnabled === "boolean" ? request.body.reminderWeeklyInsightEnabled : null;
+
+  let reminderTime = null;
+  if (typeof request.body.reminderTime === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(request.body.reminderTime)) {
+    reminderTime = request.body.reminderTime;
+  }
+
   const result = await pool.query(
     `update profiles set
        name = coalesce(nullif($2, ''), name),
@@ -544,6 +716,10 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
        lipedema_type = coalesce($10, lipedema_type),
        garment_compression_class = coalesce($11, garment_compression_class),
        garment_last_replaced_at = coalesce($12, garment_last_replaced_at),
+       reminder_daily_enabled = coalesce($13, reminder_daily_enabled),
+       reminder_time = coalesce($14, reminder_time),
+       reminder_cycle_alert_enabled = coalesce($15, reminder_cycle_alert_enabled),
+       reminder_weekly_insight_enabled = coalesce($16, reminder_weekly_insight_enabled),
        updated_at = now()
      where id = $1
      returning id, name, email, goal, photo_data_url as "photoDataUrl",
@@ -551,8 +727,14 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
                last_backup_at as "lastBackupAt",
                lipedema_stage as "lipedemaStage", lipedema_type as "lipedemaType",
                garment_compression_class as "garmentCompressionClass", garment_last_replaced_at as "garmentLastReplacedAt",
+            reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
+            reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
                updated_at as "updatedAt"`,
-    [request.userId, name, email, goal, photoDataUrl, cycleLength, periodLength, lastPeriodStart, lipedemaStage, lipedemaType, garmentCompressionClass, garmentLastReplacedAt]
+    [
+      request.userId, name, email, goal, photoDataUrl, cycleLength, periodLength, lastPeriodStart,
+      lipedemaStage, lipedemaType, garmentCompressionClass, garmentLastReplacedAt,
+      reminderDailyEnabled, reminderTime, reminderCycleAlertEnabled, reminderWeeklyInsightEnabled,
+    ]
   );
 
   response.json({ ok: true, profile: result.rows[0] });
@@ -661,6 +843,25 @@ app.get("/api/photos/latest", requireAuth, asyncRoute(async (request, response) 
   response.json({ ok: true, photos: await latestPhotos(request.userId) });
 }));
 
+app.get("/api/photos/history", requireAuth, asyncRoute(async (request, response) => {
+  const slot = cleanText(request.query.slot, "", 40);
+  if (!slot) {
+    response.status(400).json({ ok: false, error: "Informe o ângulo (slot)." });
+    return;
+  }
+
+  const result = await pool.query(
+    `select id, slot, image_data_url as "imageDataUrl", notes, created_at as "createdAt"
+       from photos
+      where profile_id = $1 and slot = $2
+      order by created_at desc
+      limit 30`,
+    [request.userId, slot]
+  );
+
+  response.json({ ok: true, photos: result.rows });
+}));
+
 const marketingHosts = new Set(["radarlipedema.com.br", "www.radarlipedema.com.br"]);
 
 function isMarketingHost(request) {
@@ -694,6 +895,7 @@ ensureDatabase()
     app.listen(port, () => {
       console.log(`Radar Lipedema rodando na porta ${port}`);
     });
+    startReminderScheduler();
   })
   .catch((error) => {
     console.error("Erro ao iniciar servidor:", error);

@@ -43,6 +43,14 @@ alter table profiles add column if not exists lipedema_stage text;
 alter table profiles add column if not exists lipedema_type text;
 alter table profiles add column if not exists garment_compression_class text;
 alter table profiles add column if not exists garment_last_replaced_at date;
+alter table profiles add column if not exists reminder_daily_enabled boolean not null default true;
+alter table profiles add column if not exists reminder_time text not null default '20:00';
+alter table profiles add column if not exists reminder_cycle_alert_enabled boolean not null default true;
+alter table profiles add column if not exists reminder_weekly_insight_enabled boolean not null default false;
+alter table profiles add column if not exists reminder_last_daily_sent_on date;
+alter table profiles add column if not exists reminder_last_garment_sent_on date;
+alter table profiles add column if not exists reminder_last_cycle_sent_on date;
+alter table profiles add column if not exists reminder_last_weekly_sent_on date;
 
 create table if not exists records (
   id bigserial primary key,

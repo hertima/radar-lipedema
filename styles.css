@@ -1610,6 +1610,56 @@ input[type="range"] {
   background: linear-gradient(135deg, #fff, #fbf7ff);
 }
 
+.photo-slot-row {
+  display: grid;
+  gap: 6px;
+}
+
+.photo-history-link {
+  justify-self: end;
+  border: 0;
+  background: none;
+  color: var(--purple);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: underline;
+  padding: 2px 4px;
+}
+
+.photo-history-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.photo-history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.photo-history-grid figure {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #f0e7f5;
+  background: #fff;
+}
+
+.photo-history-grid img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.photo-history-grid figcaption {
+  padding: 6px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 760;
+  text-align: center;
+}
+
 .photo-list strong {
   display: block;
   color: #171022;

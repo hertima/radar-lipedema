@@ -135,7 +135,7 @@ function averageOf(entries, key) {
   return entries.length ? entries.reduce((total, entry) => total + entry[key], 0) / entries.length : null;
 }
 
-function computeCycleInfo(profile) {
+function computeCycleDayInfo(date, profile) {
   if (!profile?.lastPeriodStart) {
     return null;
   }
@@ -143,11 +143,11 @@ function computeCycleInfo(profile) {
   const cycleLength = profile.cycleLength || 28;
   const periodLength = profile.periodLength || 5;
   const start = new Date(`${String(profile.lastPeriodStart).slice(0, 10)}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
   start.setHours(0, 0, 0, 0);
 
-  const daysSinceStart = Math.round((today - start) / 86_400_000);
+  const daysSinceStart = Math.round((target - start) / 86_400_000);
   const cycleDay = (((daysSinceStart % cycleLength) + cycleLength) % cycleLength) + 1;
   const ovulationDay = Math.max(periodLength + 3, cycleLength - 14);
 
@@ -162,13 +162,91 @@ function computeCycleInfo(profile) {
     phase = "Lútea";
   }
 
-  return {
-    cycleDay,
-    cycleLength,
-    periodLength,
+  return { cycleDay, cycleLength, periodLength, phase };
+}
+
+function computeCycleInfo(profile) {
+  const info = computeCycleDayInfo(new Date(), profile);
+  if (!info) {
+    return null;
+  }
+
+  return { ...info, percent: Math.round((info.cycleDay / info.cycleLength) * 100) };
+}
+
+function computeSymptomsByCyclePhase() {
+  if (!currentProfile?.lastPeriodStart) {
+    return null;
+  }
+
+  const daily = getDailyRegisters();
+  if (daily.length < 4) {
+    return null;
+  }
+
+  const byPhase = { Menstrual: [], "Folicular": [], "Ovulatória": [], "Lútea": [] };
+  daily.forEach((entry) => {
+    const info = computeCycleDayInfo(entry.date, currentProfile);
+    if (info) {
+      byPhase[info.phase].push(entry);
+    }
+  });
+
+  const phaseAverages = Object.keys(byPhase).map((phase) => ({
     phase,
-    percent: Math.round((cycleDay / cycleLength) * 100),
-  };
+    count: byPhase[phase].length,
+    dor: averageOf(byPhase[phase], "dor"),
+    edema: averageOf(byPhase[phase], "edema"),
+    sensibilidade: averageOf(byPhase[phase], "sensibilidade"),
+    humor: averageOf(byPhase[phase], "humor"),
+  }));
+
+  const withData = phaseAverages.filter((entry) => entry.count > 0);
+  if (withData.length < 2) {
+    return null;
+  }
+
+  return { phaseAverages, generatedAt: new Date().toLocaleString("pt-BR") };
+}
+
+function computeCyclePhaseInsights() {
+  const data = computeSymptomsByCyclePhase();
+  if (!data) {
+    return [];
+  }
+
+  const withData = data.phaseAverages.filter((entry) => entry.count > 0);
+  const results = [];
+
+  [
+    { key: "dor", color: "pink" },
+    { key: "edema", color: "purple" },
+    { key: "sensibilidade", color: "orange" },
+    { key: "humor", color: "teal" },
+  ].forEach(({ key, color }) => {
+    const sorted = [...withData].sort((a, b) => b[key] - a[key]);
+    if (sorted.length < 2) {
+      return;
+    }
+
+    const highest = sorted[0];
+    const lowest = sorted[sorted.length - 1];
+    const diff = +(highest[key] - lowest[key]).toFixed(1);
+    if (diff < 1) {
+      return;
+    }
+
+    results.push({
+      color,
+      label: seriesLabels[key],
+      text:
+        key === "humor"
+          ? `Costuma ser melhor na fase ${highest.phase} (${highest[key].toFixed(1)}/10) do que na fase ${lowest.phase} (${lowest[key].toFixed(1)}/10), com base nos seus registros.`
+          : `Costuma ser mais alto(a) na fase ${highest.phase} (${highest[key].toFixed(1)}/10) do que na fase ${lowest.phase} (${lowest[key].toFixed(1)}/10), com base nos seus registros.`,
+    });
+  });
+
+  return results;
 }
 
 function renderCycleCard(profile) {
@@ -243,7 +321,7 @@ function computeInsights(history) {
   const half = Math.max(1, Math.floor(history.length / 2));
   const recent = history.slice(-half);
   const earlier = history.slice(0, history.length - half);
-  const insights = [];
+  const insights = computeCyclePhaseInsights();
 
   if (earlier.length) {
     [
@@ -966,15 +1044,18 @@ function renderPhotoSlot(slot) {
   const src = photoSlotImages[slot.name] || slot.placeholder;
 
   return `
-    <button class="${captured ? "captured" : ""}" type="button" data-photo-slot="${slot.name}">
-      <span class="photo-thumb ${slot.className} ${captured ? "has-photo" : ""}">
-        <img src="${src}" alt="${captured ? `Foto ${slot.name}` : `Refer&ecirc;ncia ${slot.name}`}">
-      </span>
-      <span><strong>${slot.name}</strong><small>${captured ? "Foto adicionada" : "Toque na c&acirc;mera"}</small></span>
-      <span class="camera-pill ${captured ? "done" : ""}" data-photo-status>
-        <svg class="icon"><use href="#${captured ? "i-check" : "i-camera"}"></use></svg>
-      </span>
-    </button>
+    <div class="photo-slot-row">
+      <button class="${captured ? "captured" : ""}" type="button" data-photo-slot="${slot.name}">
+        <span class="photo-thumb ${slot.className} ${captured ? "has-photo" : ""}">
+          <img src="${src}" alt="${captured ? `Foto ${slot.name}` : `Refer&ecirc;ncia ${slot.name}`}">
+        </span>
+        <span><strong>${slot.name}</strong><small>${captured ? "Foto adicionada" : "Toque na c&acirc;mera"}</small></span>
+        <span class="camera-pill ${captured ? "done" : ""}" data-photo-status>
+          <svg class="icon"><use href="#${captured ? "i-check" : "i-camera"}"></use></svg>
+        </span>
+      </button>
+      ${captured ? `<button class="photo-history-link" type="button" data-photo-history="${slot.name}">Ver evolu&ccedil;&atilde;o</button>` : ""}
+    </div>
   `;
 }
 
@@ -995,6 +1076,37 @@ function updatePhotoSlotImage(slotName, photoSrc) {
   row.querySelector("small").textContent = "Foto adicionada";
   row.querySelector("[data-photo-status]").classList.add("done");
   row.querySelector("[data-photo-status]").innerHTML = '<svg class="icon"><use href="#i-check"></use></svg>';
+}
+
+async function openPhotoHistory(slotName) {
+  settingsPanelTitle.textContent = `Evolução — ${slotName}`;
+  settingsPanelContent.innerHTML = `<p class="photo-guidance">Carregando fotos...</p>`;
+
+  const result = await apiRequest(`/api/photos/history?slot=${encodeURIComponent(slotName)}`);
+  const photos = result?.ok ? result.photos : [];
+
+  settingsPanelContent.innerHTML = `
+    <div class="photo-history-panel">
+      <p class="photo-guidance">${
+        photos.length
+          ? `${photos.length} foto${photos.length === 1 ? "" : "s"} registrada${photos.length === 1 ? "" : "s"}, da mais recente &agrave; mais antiga.`
+          : "Nenhuma foto registrada ainda para este &acirc;ngulo."
+      }</p>
+      <div class="photo-history-grid">
+        ${photos
+          .map(
+            (photo) => `
+              <figure>
+                <img src="${photo.imageDataUrl}" alt="Foto ${slotName} em ${new Date(photo.createdAt).toLocaleDateString("pt-BR")}">
+                <figcaption>${new Date(photo.createdAt).toLocaleDateString("pt-BR")}</figcaption>
+              </figure>
+            `
+          )
+          .join("")}
+      </div>
+      <button class="panel-button secondary" type="button" data-photo-history-back>Voltar</button>
+    </div>
+  `;
 }
 
 function closePhotoCamera() {
@@ -1736,19 +1848,27 @@ const settingsPanels = {
   },
   reminders: {
     title: "Lembretes",
-    content: `
-      <div class="settings-form">
-        <div class="panel-list">
-          <div class="panel-row"><span>Registrar sintomas<small>Todos os dias &agrave;s 20:00</small></span><label class="switch"><input type="checkbox" checked><i></i></label></div>
-          <div class="panel-row"><span>In&iacute;cio do ciclo<small>Alertar previs&atilde;o menstrual</small></span><label class="switch"><input type="checkbox" checked><i></i></label></div>
-          <div class="panel-row"><span>Insights semanais<small>Resumo aos domingos</small></span><label class="switch"><input type="checkbox"><i></i></label></div>
+    render() {
+      const dailyEnabled = currentProfile?.reminderDailyEnabled !== false;
+      const cycleAlertEnabled = currentProfile?.reminderCycleAlertEnabled !== false;
+      const weeklyInsightEnabled = currentProfile?.reminderWeeklyInsightEnabled === true;
+      const reminderTime = currentProfile?.reminderTime || "20:00";
+      const email = currentProfile?.email || "";
+      return `
+        <div class="settings-form">
+          <div class="panel-list">
+            <div class="panel-row"><span>Registrar sintomas<small>Lembrete di&aacute;rio por e-mail</small></span><label class="switch"><input type="checkbox" data-reminder-field="dailyEnabled"${dailyEnabled ? " checked" : ""}><i></i></label></div>
+            <div class="panel-row"><span>In&iacute;cio do ciclo<small>Alertar previs&atilde;o menstrual por e-mail</small></span><label class="switch"><input type="checkbox" data-reminder-field="cycleAlertEnabled"${cycleAlertEnabled ? " checked" : ""}><i></i></label></div>
+            <div class="panel-row"><span>Insights semanais<small>Resumo aos domingos por e-mail</small></span><label class="switch"><input type="checkbox" data-reminder-field="weeklyInsightEnabled"${weeklyInsightEnabled ? " checked" : ""}><i></i></label></div>
+          </div>
+          <label class="settings-field">Hor&aacute;rio do lembrete di&aacute;rio
+            <input type="time" data-reminder-field="time" value="${reminderTime}">
+          </label>
+          <p class="settings-hint">${email ? `Os lembretes s&atilde;o enviados por e-mail para ${escapeHtml(email)}.` : "Cadastre um e-mail v&aacute;lido para receber os lembretes."}</p>
+          <button class="panel-button" type="button" data-panel-action="save-reminders">Salvar lembretes</button>
         </div>
-        <label class="settings-field">Hor&aacute;rio principal
-          <input type="time" value="20:00">
-        </label>
-        <button class="panel-button" type="button" data-panel-action="save-reminders">Salvar lembretes</button>
-      </div>
-    `,
+      `;
+    },
   },
   goals: {
     title: "Meta de sintomas",
@@ -2794,6 +2914,18 @@ settingsPanelContent.addEventListener("click", (event) => {
     return;
   }
 
+  const photoHistoryButton = event.target.closest("[data-photo-history]");
+  if (photoHistoryButton) {
+    openPhotoHistory(photoHistoryButton.dataset.photoHistory);
+    return;
+  }
+
+  const photoHistoryBack = event.target.closest("[data-photo-history-back]");
+  if (photoHistoryBack) {
+    openRegisterPanel("photos");
+    return;
+  }
+
   const weightStepButton = event.target.closest("[data-weight-step]");
   if (weightStepButton) {
     const card = document.querySelector("[data-weight-card]");
@@ -2928,6 +3060,22 @@ settingsPanelContent.addEventListener("click", (event) => {
       cycleLength: stepperValues.cycleLength.value,
       periodLength: stepperValues.periodLength.value,
       lastPeriodStart,
+    }).then(() => loadServerState());
+    showToast(messages[actionName]);
+    closeSettingsPanel();
+    return;
+  }
+
+  if (actionName === "save-reminders") {
+    const dailyEnabled = settingsPanelContent.querySelector('[data-reminder-field="dailyEnabled"]')?.checked ?? true;
+    const cycleAlertEnabled = settingsPanelContent.querySelector('[data-reminder-field="cycleAlertEnabled"]')?.checked ?? true;
+    const weeklyInsightEnabled = settingsPanelContent.querySelector('[data-reminder-field="weeklyInsightEnabled"]')?.checked ?? false;
+    const time = settingsPanelContent.querySelector('[data-reminder-field="time"]')?.value || "20:00";
+    saveProfileToServer({
+      reminderDailyEnabled: dailyEnabled,
+      reminderCycleAlertEnabled: cycleAlertEnabled,
+      reminderWeeklyInsightEnabled: weeklyInsightEnabled,
+      reminderTime: time,
     }).then(() => loadServerState());
     showToast(messages[actionName]);
     closeSettingsPanel();
