@@ -3349,12 +3349,11 @@ input[type="range"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
   width: 100%;
   min-height: 54px;
   border: 0;
   border-top: 1px solid #f0e7f5;
-  padding: 10px 14px;
+  padding: 0 14px;
   color: #2f2638;
   background: #fff;
   text-align: left;
@@ -3364,16 +3363,23 @@ input[type="range"] {
   box-sizing: border-box;
 }
 
-.panel-list .panel-row > span:first-child {
+/* Long single-sentence rows (Rotina do dia, guia alimentar) need the text
+   span to actually shrink/wrap instead of overflowing — scoped narrowly so
+   the many short-label checklists elsewhere keep their original layout. */
+.routine-panel .panel-row,
+.diet-guide-list .panel-row {
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.routine-panel .panel-row > span:first-child,
+.diet-guide-list .panel-row > span:last-child {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: break-word;
 }
 
-.panel-list .panel-row > input,
-.panel-list .panel-row > svg,
-.panel-list .panel-row > .switch,
-.panel-list .panel-row > .stepper-inline {
+.routine-panel .panel-row > input {
   flex-shrink: 0;
 }
 
