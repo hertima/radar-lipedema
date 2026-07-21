@@ -476,6 +476,29 @@ const cyclePhaseSummaries = {
   "Lútea": "Fase pré-menstrual. Sintomas como dor e sensibilidade costumam ficar mais intensos.",
 };
 
+const actionPlanByPhase = {
+  Menstrual: {
+    exercise: "Caminhada leve de 15-20 minutos ou alongamento suave. Evite treinos de alto impacto hoje.",
+    nutrition: "Priorize ferro (folhas verdes, feijão) e hidratação. Reduza sal para não somar com a retenção típica da fase.",
+    stress: "Dê prioridade ao descanso — uma respiração guiada de 5 minutos ajuda a aliviar a tensão.",
+  },
+  Folicular: {
+    exercise: "Sua energia tende a subir — bom momento para caminhadas mais longas ou um treino de força leve.",
+    nutrition: "Inclua proteínas magras e vegetais coloridos para sustentar o pique dessa fase.",
+    stress: "Aproveite a disposição maior para organizar sua rotina da semana.",
+  },
+  "Ovulatória": {
+    exercise: "Sensibilidade pode aumentar — prefira exercícios de baixo impacto como natação ou bicicleta leve.",
+    nutrition: "Reforce alimentos anti-inflamatórios (ômega-3, açafrão, gengibre) — veja o guia completo em Alimentação anti-inflamatória.",
+    stress: "Técnicas de respiração e mindfulness ajudam a lidar com a sensibilidade típica dessa fase.",
+  },
+  "Lútea": {
+    exercise: "Sintomas costumam ficar mais intensos — foque em alongamento e drenagem manual, evitando esforço alto.",
+    nutrition: "Reduza açúcar e sódio, aumente a água — ajuda a conter o inchaço característico da TPM.",
+    stress: "Priorize o sono e técnicas de relaxamento; os sintomas físicos tendem a mexer com o humor nessa fase.",
+  },
+};
+
 function renderCycleTimeline(profile) {
   const info = computeCycleInfo(profile);
   const daysContainer = document.querySelector("[data-cycle-days]");
@@ -985,6 +1008,44 @@ function renderDeepInsights(history) {
     .join("");
 }
 
+function renderActionPlan(profile, history) {
+  const container = document.querySelector("[data-action-plan]");
+  if (!container) {
+    return;
+  }
+
+  const info = computeCycleInfo(profile);
+  if (!info) {
+    container.innerHTML = `
+      <p class="diet-guide-intro">Informe a data do seu último ciclo em Ajustes &gt; Preferências do ciclo para receber um plano ajustado à sua fase.</p>
+    `;
+    return;
+  }
+
+  const plan = actionPlanByPhase[info.phase];
+  const worst = computeInsights(history).find((insight) => insight.text.includes("maior média"));
+
+  container.innerHTML = `
+    <p class="diet-guide-intro">Fase ${info.phase} — Dia ${info.cycleDay} de ${info.cycleLength}${
+      worst ? `. Seu sintoma de maior atenção agora: <strong>${worst.label}</strong>.` : ""
+    }</p>
+    <div class="insight-list">
+      <article>
+        <span class="round-icon teal"></span>
+        <p><strong>Exercício</strong> ${plan.exercise}</p>
+      </article>
+      <article>
+        <span class="round-icon orange"></span>
+        <p><strong>Nutrição</strong> ${plan.nutrition}</p>
+      </article>
+      <article>
+        <span class="round-icon pink"></span>
+        <p><strong>Manejo do estresse</strong> ${plan.stress}</p>
+      </article>
+    </div>
+  `;
+}
+
 function renderInsightsHero(history) {
   const strongEl = document.querySelector(".insights-hero strong");
   const spanEl = document.querySelector(".insights-hero span");
@@ -1196,6 +1257,7 @@ function renderDynamicData() {
   renderSymptomTable(history);
   renderDeepInsights(history);
   renderInsightsHero(history);
+  renderActionPlan(currentProfile, history);
   renderRecentTrendCards(history);
   renderGamification(history);
   renderCycleCard(currentProfile);
