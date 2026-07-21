@@ -1144,6 +1144,18 @@ function buildPremiumDataset() {
     ? insightObjects.map((insight) => `${insight.label}: ${insight.text}`)
     : ["Continue registrando seus sintomas para gerar insights personalizados."];
 
+  const cycleInfo = computeCycleInfo(currentProfile);
+  const worstInsight = insightObjects.find((insight) => insight.text.includes("maior média"));
+  const actionPlan = cycleInfo
+    ? {
+        phase: cycleInfo.phase,
+        cycleDay: cycleInfo.cycleDay,
+        cycleLength: cycleInfo.cycleLength,
+        focusSymptom: worstInsight ? worstInsight.label : null,
+        ...actionPlanByPhase[cycleInfo.phase],
+      }
+    : null;
+
   return {
     generatedAt: new Date().toLocaleString("pt-BR"),
     score,
@@ -1160,6 +1172,7 @@ function buildPremiumDataset() {
       humor: delta("humor"),
     },
     insights,
+    actionPlan,
   };
 }
 
@@ -2039,18 +2052,78 @@ function createPremiumReportPdf() {
   commands.push(pdfText("Este relatório apoia acompanhamento e não substitui avaliação profissional.", 58, 47, 9, muted));
   commands.push(pdfText(`Total analisado: ${data.totalRecords} registros`, 420, 23, 9, muted));
 
-  return buildPdfDocument(commands, pageWidth, pageHeight);
+  const planCommands = [];
+  planCommands.push(pdfRect(0, 0, pageWidth, pageHeight, [1.0, 0.985, 1.0]));
+  planCommands.push(pdfRect(0, 748, pageWidth, 94, lavender));
+  planCommands.push(pdfRect(0, 748, pageWidth, 10, pink));
+  planCommands.push(pdfText("Radar Lipedema", 42, 807, 24, purple, "F2"));
+  planCommands.push(pdfText("Plano de ação personalizado", 42, 784, 15, ink, "F2"));
+  planCommands.push(pdfText(`Gerado em ${data.generatedAt}`, 42, 765, 10, muted));
+
+  if (!data.actionPlan) {
+    planCommands.push(
+      pdfText("Informe a data do último ciclo em Ajustes > Preferências do ciclo para gerar um plano ajustado à fase.", 42, 700, 11, muted)
+    );
+  } else {
+    const plan = data.actionPlan;
+    planCommands.push(
+      pdfText(
+        `Fase ${plan.phase} — Dia ${plan.cycleDay} de ${plan.cycleLength}${plan.focusSymptom ? ` · Sintoma de maior atenção: ${plan.focusSymptom}` : ""}`,
+        42,
+        712,
+        11,
+        purple,
+        "F2"
+      )
+    );
+
+    let planY = 668;
+    [
+      { title: "Exercício", text: plan.exercise, color: [0.86, 0.98, 0.97] },
+      { title: "Nutrição", text: plan.nutrition, color: [1.0, 0.94, 0.83] },
+      { title: "Manejo do estresse", text: plan.stress, color: [1.0, 0.89, 0.94] },
+    ].forEach(({ title, text, color }) => {
+      const lines = wrapReportLine(text, 78);
+      const boxHeight = 30 + lines.length * 14;
+      planCommands.push(pdfRect(42, planY - boxHeight, 510, boxHeight, color, line));
+      planCommands.push(pdfText(title, 58, planY - 18, 11, ink, "F2"));
+      lines.forEach((lineText, lineIndex) => {
+        planCommands.push(pdfText(lineText, 58, planY - 36 - lineIndex * 14, 9, muted));
+      });
+      planY -= boxHeight + 14;
+    });
+  }
+
+  planCommands.push(pdfRect(42, 38, 510, 38, [0.98, 0.95, 1.0], line));
+  planCommands.push(pdfText("Observação", 58, 60, 10, purple, "F2"));
+  planCommands.push(
+    pdfText("Orientações gerais de bem-estar, não um plano médico individual — ajuste com profissionais de saúde.", 58, 47, 9, muted)
+  );
+
+  return buildPdfDocument([commands, planCommands], pageWidth, pageHeight);
 }
 
-function buildPdfDocument(commands, pageWidth, pageHeight) {
-  const stream = commands.join("\n");
+function buildPdfDocument(pages, pageWidth, pageHeight) {
+  const pageCommandSets = Array.isArray(pages[0]) ? pages : [pages];
+  const pageCount = pageCommandSets.length;
+  const fontF1Ref = 3;
+  const fontF2Ref = 4;
+  const pageObjRefs = pageCommandSets.map((_, index) => 5 + index);
+  const contentObjRefs = pageCommandSets.map((_, index) => 5 + pageCount + index);
+
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
+    `<< /Type /Pages /Kids [${pageObjRefs.map((ref) => `${ref} 0 R`).join(" ")}] /Count ${pageCount} >>`,
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
-    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+    ...pageCommandSets.map(
+      (_, index) =>
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontF1Ref} 0 R /F2 ${fontF2Ref} 0 R >> >> /Contents ${contentObjRefs[index]} 0 R >>`
+    ),
+    ...pageCommandSets.map((commands) => {
+      const stream = commands.join("\n");
+      return `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+    }),
   ];
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
