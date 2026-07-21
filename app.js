@@ -13,6 +13,7 @@ let periodIndex = 0;
 let profilePhoto = "";
 let activePhotoSlot = "";
 let activePhotoStream = null;
+let activeFoodScanStream = null;
 const periodLabels = ["\u00daltimos 3 ciclos", "\u00daltimos 6 ciclos", "Ciclo atual"];
 const seriesLabels = {
   dor: "Dor",
@@ -1112,6 +1113,7 @@ const recordTypeLabels = {
   "save-pain": "Dor detalhada",
   "save-photos": "Fotos",
   "save-mls": "Munich Lipedema Score",
+  "save-food-scan": "Alimentos escaneados",
 };
 
 function buildPremiumDataset() {
@@ -1697,6 +1699,146 @@ function capturePhotoFromCamera() {
   savePhotoToServer(slotName, photoSrc);
   closePhotoCamera();
   showToast(`Foto ${slotName} tirada`);
+}
+
+function closeFoodScanCamera() {
+  if (activeFoodScanStream) {
+    activeFoodScanStream.getTracks().forEach((track) => track.stop());
+  }
+  activeFoodScanStream = null;
+  settingsPanelContent.querySelector("[data-food-camera-capture]")?.remove();
+}
+
+function renderFoodScanCamera() {
+  closeFoodScanCamera();
+  const body = settingsPanelContent.querySelector("[data-food-scan-body]");
+  if (!body) {
+    return;
+  }
+
+  body.insertAdjacentHTML(
+    "beforeend",
+    `
+      <div class="photo-camera-capture" data-food-camera-capture>
+        <section class="camera-capture-card" aria-label="Câmera para o prato">
+          <div class="camera-preview-frame">
+            <video autoplay muted playsinline data-food-camera-preview></video>
+            <span class="camera-loading">Abrindo câmera...</span>
+          </div>
+          <div class="camera-action-row">
+            <button class="panel-button" type="button" data-food-camera-action="capture">Tirar foto</button>
+            <button class="panel-button secondary" type="button" data-food-camera-action="gallery">Galeria</button>
+            <button class="panel-button secondary" type="button" data-food-camera-action="close">Cancelar</button>
+          </div>
+        </section>
+      </div>
+    `
+  );
+}
+
+async function openFoodScanCamera() {
+  const fallbackInput = settingsPanelContent.querySelector("[data-food-scan-input]");
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    fallbackInput?.click();
+    return;
+  }
+
+  renderFoodScanCamera();
+
+  try {
+    activeFoodScanStream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: "environment" } },
+    });
+    const preview = settingsPanelContent.querySelector("[data-food-camera-preview]");
+    const frame = settingsPanelContent.querySelector("[data-food-camera-capture] .camera-preview-frame");
+    preview.srcObject = activeFoodScanStream;
+    await preview.play();
+    frame?.classList.add("ready");
+  } catch (error) {
+    closeFoodScanCamera();
+    showToast("Câmera bloqueada. Escolha da galeria.");
+    fallbackInput?.click();
+  }
+}
+
+function captureFoodScanPhoto() {
+  const preview = settingsPanelContent.querySelector("[data-food-camera-preview]");
+  if (!preview || !preview.videoWidth) {
+    showToast("Câmera ainda abrindo");
+    return;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = preview.videoWidth;
+  canvas.height = preview.videoHeight;
+  canvas.getContext("2d").drawImage(preview, 0, 0, canvas.width, canvas.height);
+  const photoSrc = canvas.toDataURL("image/jpeg", 0.85);
+  closeFoodScanCamera();
+  submitFoodScan(photoSrc);
+}
+
+function renderFoodScanLoading() {
+  const body = settingsPanelContent.querySelector("[data-food-scan-body]");
+  if (!body) {
+    return;
+  }
+  body.innerHTML = `<p class="diet-guide-intro">Analisando a foto...</p>`;
+}
+
+function renderFoodScanResult(result) {
+  const body = settingsPanelContent.querySelector("[data-food-scan-body]");
+  if (!body) {
+    return;
+  }
+
+  if (!result || result.ok === false) {
+    body.innerHTML = `
+      <p class="diet-guide-intro">${result?.error || "Não foi possível analisar a foto agora. Tente novamente."}</p>
+      <button class="panel-button" type="button" data-panel-action="open-food-scan-camera">Tentar de novo</button>
+    `;
+    return;
+  }
+
+  if (!result.items.length) {
+    body.innerHTML = `
+      <p class="diet-guide-intro">Não conseguimos identificar alimentos nessa foto com confiança. Tente uma foto mais próxima e bem iluminada.</p>
+      <button class="panel-button" type="button" data-panel-action="open-food-scan-camera">Tirar outra foto</button>
+    `;
+    return;
+  }
+
+  const itemsHtml = result.items
+    .map((item) => {
+      const color = item.match ? (item.match.category === "good" ? "teal" : "pink") : "orange";
+      const verdict = item.match
+        ? item.match.category === "good"
+          ? `Está na lista de alimentos anti-inflamatórios: <strong>${item.match.name}</strong>.`
+          : `Está na lista de alimentos a evitar: <strong>${item.match.name}</strong>.`
+        : "Sem correspondência direta na nossa lista — classificação apenas da estimativa da IA.";
+      const calories = item.estimatedCalories !== null ? `~${item.estimatedCalories} kcal` : "calorias não estimadas";
+      return `
+        <article>
+          <span class="round-icon ${color}"></span>
+          <p><strong>${item.name}</strong>${item.portion ? ` (${item.portion})` : ""} — ${calories}. ${verdict}</p>
+        </article>
+      `;
+    })
+    .join("");
+
+  body.innerHTML = `
+    <p class="diet-guide-intro">Estimativa da IA a partir da foto — não é uma pesagem exata.</p>
+    <p class="food-scan-total"><strong>${result.totalCalories}</strong> kcal estimadas no total</p>
+    <div class="insight-list">${itemsHtml}</div>
+    <button class="panel-button secondary" type="button" data-panel-action="open-food-scan-camera">Escanear outro prato</button>
+  `;
+}
+
+async function submitFoodScan(imageDataUrl) {
+  renderFoodScanLoading();
+  const result = await apiRequest("/api/food-scan", { method: "POST", body: { imageDataUrl } });
+  renderFoodScanResult(result);
 }
 
 function getComparisonTone(value, higherIsBetter = false) {
@@ -2917,21 +3059,22 @@ const registerPanels = {
 
           <p class="section-label">Priorize</p>
           <div class="panel-list diet-guide-list good">
-            <div class="panel-row"><span class="diet-guide-icon"><svg class="icon"><use href="#i-check"></use></svg></span><span>Peixes gordurosos<small>Salm&atilde;o, cavala, sardinha, truta &mdash; ricos em &ocirc;mega-3</small></span></div>
-            <div class="panel-row"><span class="diet-guide-icon"><svg class="icon"><use href="#i-check"></use></svg></span><span>Frutas e vegetais coloridos<small>Frutas vermelhas, ma&ccedil;&atilde;, br&oacute;colis, espinafre, couve</small></span></div>
-            <div class="panel-row"><span class="diet-guide-icon"><svg class="icon"><use href="#i-check"></use></svg></span><span>Castanhas e sementes<small>Amêndoas, nozes, chia, linha&ccedil;a</small></span></div>
-            <div class="panel-row"><span class="diet-guide-icon"><svg class="icon"><use href="#i-check"></use></svg></span><span>Gr&atilde;os integrais<small>Quinoa, aveia, arroz integral</small></span></div>
-            <div class="panel-row"><span class="diet-guide-icon"><svg class="icon"><use href="#i-check"></use></svg></span><span>Temperos anti-inflamat&oacute;rios<small>A&ccedil;afr&atilde;o (curcumina), gengibre, alho</small></span></div>
-            <div class="panel-row"><span class="diet-guide-icon"><svg class="icon"><use href="#i-check"></use></svg></span><span>Azeite de oliva extravirgem<small>Principal fonte de gordura</small></span></div>
+            ${antiInflammatoryFoodGuide.good
+              .map(
+                (item) =>
+                  `<div class="panel-row"><span class="diet-guide-icon"><svg class="icon"><use href="#i-check"></use></svg></span><span>${item.name}${item.detail ? `<small>${item.detail}</small>` : ""}</span></div>`
+              )
+              .join("")}
           </div>
 
           <p class="section-label">Evite ou reduza</p>
           <div class="panel-list diet-guide-list avoid">
-            <div class="panel-row"><span class="diet-guide-icon"><span class="x-icon"></span></span><span>Ultraprocessados e frituras<small>Salgadinhos, fast food</small></span></div>
-            <div class="panel-row"><span class="diet-guide-icon"><span class="x-icon"></span></span><span>A&ccedil;&uacute;car refinado<small>Doces, sobremesas, bebidas a&ccedil;ucaradas</small></span></div>
-            <div class="panel-row"><span class="diet-guide-icon"><span class="x-icon"></span></span><span>&Oacute;leos vegetais refinados<small>Soja, milho, girassol &mdash; excesso de &ocirc;mega-6</small></span></div>
-            <div class="panel-row"><span class="diet-guide-icon"><span class="x-icon"></span></span><span>Carne vermelha em excesso<small>Especialmente grelhada ou processada</small></span></div>
-            <div class="panel-row"><span class="diet-guide-icon"><span class="x-icon"></span></span><span>&Aacute;lcool em excesso</span></div>
+            ${antiInflammatoryFoodGuide.avoid
+              .map(
+                (item) =>
+                  `<div class="panel-row"><span class="diet-guide-icon"><span class="x-icon"></span></span><span>${item.name}${item.detail ? `<small>${item.detail}</small>` : ""}</span></div>`
+              )
+              .join("")}
           </div>
 
           <article class="mls-applicability-card">
@@ -2940,6 +3083,21 @@ const registerPanels = {
 
           <p class="diet-guide-note">Isso &eacute; orienta&ccedil;&atilde;o geral, n&atilde;o um plano individual. Sensibilidades a l&aacute;cteos ou gl&uacute;ten variam de pessoa pra pessoa &mdash; o ideal &eacute; ajustar com um nutricionista que conhe&ccedil;a lipedema.</p>
           <button class="panel-button secondary" type="button" data-open-register-panel="habits">Voltar</button>
+        </div>
+      `;
+    },
+  },
+  "food-scanner": {
+    title: "Scanner de alimentos",
+    render() {
+      return `
+        <div class="smart-register-panel food-scanner-panel">
+          <img src="imagem/imagem/scanner de alimentos.png" alt="" class="food-scanner-mascot">
+          <p class="diet-guide-intro">Tire uma foto do seu prato. Uma IA identifica os alimentos e estima as calorias, e o app cruza cada um com a lista real de alimentos anti-inflamatórios do guia de dieta &mdash; sem achismo escondido.</p>
+          <div data-food-scan-body>
+            <button class="panel-button" type="button" data-panel-action="open-food-scan-camera">Tirar foto do prato</button>
+            <input type="file" accept="image/*" capture="environment" data-food-scan-input hidden>
+          </div>
         </div>
       `;
     },
@@ -3132,6 +3290,7 @@ function openRegisterPanel(panelId) {
 
 function closeSettingsPanel() {
   closePhotoCamera();
+  closeFoodScanCamera();
   settingsSheet.classList.remove("open");
   settingsSheet.setAttribute("aria-hidden", "true");
 }
@@ -3495,6 +3654,28 @@ settingsPanelContent.addEventListener("change", (event) => {
     return;
   }
 
+  const foodScanInput = event.target.closest("[data-food-scan-input]");
+  if (foodScanInput) {
+    const file = foodScanInput.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Escolha uma imagem");
+      foodScanInput.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      foodScanInput.value = "";
+      submitFoodScan(String(reader.result));
+    });
+    reader.readAsDataURL(file);
+    return;
+  }
+
   const photoInput = event.target.closest("[data-photo-input]");
   if (!photoInput) {
     return;
@@ -3643,6 +3824,25 @@ settingsPanelContent.addEventListener("click", (event) => {
     return;
   }
 
+  const foodCameraAction = event.target.closest("[data-food-camera-action]");
+  if (foodCameraAction) {
+    const actionName = foodCameraAction.dataset.foodCameraAction;
+    if (actionName === "capture") {
+      captureFoodScanPhoto();
+      return;
+    }
+
+    if (actionName === "gallery") {
+      const foodScanInput = settingsPanelContent.querySelector("[data-food-scan-input]");
+      closeFoodScanCamera();
+      foodScanInput?.click();
+      return;
+    }
+
+    closeFoodScanCamera();
+    return;
+  }
+
   const photoSlot = event.target.closest("[data-photo-slot]");
   if (photoSlot) {
     openPhotoCapture(photoSlot.dataset.photoSlot);
@@ -3714,6 +3914,11 @@ settingsPanelContent.addEventListener("click", (event) => {
   const actionName = action.dataset.panelAction;
   if (actionName === "avatar") {
     openAvatarPicker();
+    return;
+  }
+
+  if (actionName === "open-food-scan-camera") {
+    openFoodScanCamera();
     return;
   }
 

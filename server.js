@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const { Pool } = require("pg");
+const { matchFoodInGuide } = require("./foodGuide.js");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -874,6 +875,88 @@ app.post("/api/photos", requireAuth, asyncRoute(async (request, response) => {
   );
 
   response.status(201).json({ ok: true, photo: result.rows[0] });
+}));
+
+app.post("/api/food-scan", requireAuth, rateLimit("food-scan", 20, 15 * 60 * 1000), asyncRoute(async (request, response) => {
+  const imageDataUrl = cleanText(request.body.imageDataUrl, "", 20_000_000);
+
+  if (!imageDataUrl.startsWith("data:image/")) {
+    response.status(400).json({ ok: false, error: "Foto inválida." });
+    return;
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    response.status(503).json({ ok: false, error: "Scanner de alimentos ainda não está configurado neste servidor." });
+    return;
+  }
+
+  const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Você identifica alimentos em fotos de refeições para um app de saúde. Responda APENAS com JSON no formato " +
+            '{"items":[{"name":"string em português","portion":"string curta descrevendo a porção vista","estimatedCalories":number}]}. ' +
+            "Se não conseguir identificar nenhum alimento com confiança razoável, responda com {\"items\":[]}. " +
+            "As calorias são uma estimativa visual aproximada, deixe isso implícito sendo conservadora.",
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Identifique os alimentos nesta foto e estime a porção e as calorias de cada um." },
+            { type: "image_url", image_url: { url: imageDataUrl } },
+          ],
+        },
+      ],
+      max_tokens: 500,
+    }),
+  });
+
+  if (!aiResponse.ok) {
+    const errorBody = await aiResponse.text().catch(() => "");
+    console.error("Falha na API de visão:", aiResponse.status, errorBody);
+    response.status(502).json({ ok: false, error: "Não foi possível analisar a foto agora. Tente novamente em instantes." });
+    return;
+  }
+
+  const aiData = await aiResponse.json();
+  let parsed;
+  try {
+    parsed = JSON.parse(aiData.choices?.[0]?.message?.content || "{}");
+  } catch (error) {
+    parsed = { items: [] };
+  }
+
+  const items = Array.isArray(parsed.items) ? parsed.items.slice(0, 8) : [];
+  const results = items.map((item) => {
+    const name = cleanText(item?.name, "", 120);
+    const match = matchFoodInGuide(name);
+    return {
+      name,
+      portion: cleanText(item?.portion, "", 120),
+      estimatedCalories: Number.isFinite(Number(item?.estimatedCalories)) ? Math.round(Number(item.estimatedCalories)) : null,
+      match,
+    };
+  });
+
+  const totalCalories = results.reduce((total, item) => total + (item.estimatedCalories || 0), 0);
+
+  const record = await pool.query(
+    `insert into records (profile_id, record_type, payload)
+     values ($1, 'save-food-scan', $2)
+     returning id, record_type as "recordType", payload, created_at as "createdAt"`,
+    [request.userId, JSON.stringify({ items: results, totalCalories })]
+  );
+
+  response.json({ ok: true, items: results, totalCalories, record: record.rows[0] });
 }));
 
 app.get("/api/photos/latest", requireAuth, asyncRoute(async (request, response) => {
