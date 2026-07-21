@@ -1913,6 +1913,8 @@ function normalizeReportText(value) {
     .replace(/&Ccedil;/g, "\u00c7")
     .replace(/&Ecirc;/g, "\u00ca")
     .replace(/&Otilde;/g, "\u00d5")
+    .replace(/\u2014/g, "\u0097")
+    .replace(/\u2013/g, "\u0096")
     .split("")
     .map((char) => (char.charCodeAt(0) <= 0xff ? char : "?"))
     .join("");
@@ -2013,7 +2015,7 @@ function createPremiumReportPdf() {
     commands.push(pdfText(String(value), x + 204, y + 18, 14, purple, "F2"));
   });
 
-  commands.push(pdfText("Comparativo entre períodos", 42, 414, 15, ink, "F2"));
+  commands.push(pdfText("Comparativo entre períodos", 42, 424, 15, ink, "F2"));
   commands.push(pdfRect(42, 390, 510, 24, purple));
   ["Período", "Dor", "Edema", "Sens.", "Humor"].forEach((title, index) => {
     const x = [54, 254, 320, 386, 452][index];
