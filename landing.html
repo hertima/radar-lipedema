@@ -162,9 +162,9 @@
 
       <section class="lp-price" id="preco" aria-label="Preço">
         <div class="wrap">
-          <span class="lp-price-badge">Preço de lançamento</span>
+          <span class="lp-price-badge">Preço Fundadora</span>
           <h2 class="lp-price-heading">Escolha seu plano</h2>
-          <p class="lp-price-rising">Esse valor sobe conforme mais pessoas entrarem.</p>
+          <p class="lp-price-rising">Esse valor vale só para as 50 primeiras contas verificadas — depois disso, sobe.</p>
           <p class="lp-price-stat" id="user-count-stat" hidden></p>
           <div class="lp-price-plans">
             <article class="lp-price-plan">
@@ -190,6 +190,10 @@
               </a>
             </article>
           </div>
+          <p class="lp-price-guarantee">
+            <svg class="icon"><use href="#i-check"></use></svg>
+            Teste por 7 dias. Se não sentir mais clareza sobre o seu corpo nesse período, é só chamar a gente e devolvemos seu valor.
+          </p>
         </div>
       </section>
 
@@ -415,18 +419,20 @@
         });
       }
 
-      // Contador real de cadastros, puxado direto do banco de dados (não é número inventado).
+      // Vagas de fundadora restantes, puxadas direto do banco de dados (não é número inventado).
+      // Quando foundersSpotsLeft chegar a 0, atualizar manualmente o preço/badge acima —
+      // não há gateway de pagamento ainda para automatizar o reajuste.
       fetch("/api/stats/public")
         .then(function (response) { return response.json(); })
         .then(function (data) {
           var el = document.getElementById("user-count-stat");
-          if (!el || !data || typeof data.verifiedUsers !== "number") {
+          if (!el || !data || typeof data.foundersSpotsLeft !== "number") {
             return;
           }
-          var count = data.verifiedUsers;
-          el.textContent = count > 0
-            ? count + (count === 1 ? " pessoa já criou conta" : " pessoas já criaram conta")
-            : "Seja uma das primeiras a criar conta";
+          var spotsLeft = data.foundersSpotsLeft;
+          el.textContent = spotsLeft > 0
+            ? "Restam " + spotsLeft + (spotsLeft === 1 ? " vaga" : " vagas") + " no Preço Fundadora"
+            : "Vagas de fundadora esgotadas — preço sobe em breve";
           el.hidden = false;
         })
         .catch(function () {});

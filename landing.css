@@ -858,6 +858,24 @@ a {
   background: var(--purple-deep);
 }
 
+.lp-price-guarantee {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 480px;
+  margin: 24px auto 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd1e4;
+}
+
+.lp-price-guarantee .icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
 /* ---------- Testimonials ---------- */
 
 .lp-testimonials {

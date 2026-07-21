@@ -410,9 +410,17 @@ app.get("/api/health", asyncRoute(async (_request, response) => {
   response.json({ ok: true, app: "Radar Lipedema", databaseTime: db.rows[0].now });
 }));
 
+const FOUNDERS_CAP = 50;
+
 app.get("/api/stats/public", asyncRoute(async (_request, response) => {
   const result = await pool.query("select count(*)::int as count from users where email_verified = true");
-  response.json({ ok: true, verifiedUsers: result.rows[0].count });
+  const verifiedUsers = result.rows[0].count;
+  response.json({
+    ok: true,
+    verifiedUsers,
+    foundersCap: FOUNDERS_CAP,
+    foundersSpotsLeft: Math.max(0, FOUNDERS_CAP - verifiedUsers),
+  });
 }));
 
 app.post("/api/auth/register", rateLimit("register", 10, 15 * 60 * 1000), asyncRoute(async (request, response) => {
