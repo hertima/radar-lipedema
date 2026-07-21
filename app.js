@@ -118,6 +118,24 @@ function updateEvolutionScore(values) {
   return score;
 }
 
+function getPeriodCutoffDate(index) {
+  const cycleLength = currentProfile?.cycleLength || 28;
+
+  if (index === 2 && currentProfile?.lastPeriodStart) {
+    return new Date(currentProfile.lastPeriodStart);
+  }
+
+  const cycles = index === 1 ? 6 : 3;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - cycles * cycleLength);
+  return cutoff;
+}
+
+function getPeriodFilteredHistory() {
+  const cutoffDate = getPeriodCutoffDate(periodIndex);
+  return { history: getDailyRegisters().filter((entry) => entry.date >= cutoffDate), cutoffDate };
+}
+
 function getDailyRegisters() {
   return recordHistory
     .filter((record) => record.recordType === "daily_register" && record.payload?.symptoms)
@@ -174,12 +192,12 @@ function computeCycleInfo(profile) {
   return { ...info, percent: Math.round((info.cycleDay / info.cycleLength) * 100) };
 }
 
-function computeSymptomsByCyclePhase() {
+function computeSymptomsByCyclePhase(cutoffDate) {
   if (!currentProfile?.lastPeriodStart) {
     return null;
   }
 
-  const daily = getDailyRegisters();
+  const daily = cutoffDate ? getDailyRegisters().filter((entry) => entry.date >= cutoffDate) : getDailyRegisters();
   if (daily.length < 4) {
     return null;
   }
@@ -209,8 +227,8 @@ function computeSymptomsByCyclePhase() {
   return { phaseAverages, generatedAt: new Date().toLocaleString("pt-BR") };
 }
 
-function computeCyclePhaseInsights() {
-  const data = computeSymptomsByCyclePhase();
+function computeCyclePhaseInsights(cutoffDate) {
+  const data = computeSymptomsByCyclePhase(cutoffDate);
   if (!data) {
     return [];
   }
@@ -298,14 +316,15 @@ function medianSplitPredicate(records, extractValue) {
   };
 }
 
-function computeHabitSymptomCorrelations() {
-  const daily = getDailyRegisters();
+function computeHabitSymptomCorrelations(cutoffDate) {
+  const daily = cutoffDate ? getDailyRegisters().filter((entry) => entry.date >= cutoffDate) : getDailyRegisters();
   if (daily.length < 6) {
     return [];
   }
 
-  const treatments = recordHistory.filter((record) => record.recordType === "save-treatments");
-  const habits = recordHistory.filter((record) => record.recordType === "save-habits");
+  const sinceTime = cutoffDate ? cutoffDate.getTime() : 0;
+  const treatments = recordHistory.filter((record) => record.recordType === "save-treatments" && new Date(record.createdAt).getTime() >= sinceTime);
+  const habits = recordHistory.filter((record) => record.recordType === "save-habits" && new Date(record.createdAt).getTime() >= sinceTime);
 
   const factors = [
     {
@@ -412,8 +431,8 @@ function computeHabitSymptomCorrelations() {
   return factors.filter((factor) => factor.result);
 }
 
-function computeHabitSymptomInsights() {
-  return computeHabitSymptomCorrelations().map((factor) => ({
+function computeHabitSymptomInsights(cutoffDate) {
+  return computeHabitSymptomCorrelations(cutoffDate).map((factor) => ({
     color: factor.color,
     label: factor.symptomLabel,
     text: `Nos dias ${factor.activeDesc}, sua m&eacute;dia de ${factor.symptomLabel.toLowerCase()} foi ${factor.result.activeAvg}/10, contra ${factor.result.inactiveAvg}/10 nos dias ${factor.inactiveDesc} — baseado em ${factor.result.activeCount + factor.result.inactiveCount} registros.`,
@@ -484,7 +503,7 @@ function renderCycleTimeline(profile) {
   if (textEl) textEl.textContent = cyclePhaseSummaries[info.phase] || "";
 }
 
-function computeInsights(history) {
+function computeInsights(history, cutoffDate) {
   if (history.length < 2) {
     return [];
   }
@@ -492,7 +511,7 @@ function computeInsights(history) {
   const half = Math.max(1, Math.floor(history.length / 2));
   const recent = history.slice(-half);
   const earlier = history.slice(0, history.length - half);
-  const insights = computeCyclePhaseInsights();
+  const insights = computeCyclePhaseInsights(cutoffDate);
 
   if (earlier.length) {
     [
@@ -532,18 +551,19 @@ function computeInsights(history) {
     text: `É o sintoma com maior média entre os seus registros (${overallAverages[worstKey].toFixed(1)}/10).`,
   });
 
-  const bruisingInsight = computeBruisingInsight();
+  const bruisingInsight = computeBruisingInsight(cutoffDate);
   if (bruisingInsight) {
     insights.push(bruisingInsight);
   }
 
-  insights.push(...computeHabitSymptomInsights());
+  insights.push(...computeHabitSymptomInsights(cutoffDate));
 
   return insights;
 }
 
-function computeBruisingInsight() {
-  const entries = recordHistory.filter((record) => record.recordType === "save-symptoms-extra");
+function computeBruisingInsight(cutoffDate) {
+  const sinceTime = cutoffDate ? cutoffDate.getTime() : 0;
+  const entries = recordHistory.filter((record) => record.recordType === "save-symptoms-extra" && new Date(record.createdAt).getTime() >= sinceTime);
   if (entries.length < 3) {
     return null;
   }
@@ -907,13 +927,13 @@ function renderSymptomTable(history) {
   });
 }
 
-function renderHistoryInsightCards(history) {
+function renderHistoryInsightCards(history, cutoffDate) {
   const container = document.querySelector(".history-insight-card");
   if (!container) {
     return;
   }
 
-  const insights = computeInsights(history);
+  const insights = computeInsights(history, cutoffDate);
   if (!insights.length) {
     container.innerHTML = `
       <button type="button" data-toast="Continue registrando para desbloquear insights">
@@ -1163,12 +1183,17 @@ function renderGamification(history) {
   });
 }
 
+function renderHistoryPeriodViews() {
+  const { history: periodHistory, cutoffDate } = getPeriodFilteredHistory();
+  renderSymptomChart(periodHistory);
+  renderHistoryInsightCards(periodHistory, cutoffDate);
+}
+
 function renderDynamicData() {
   const history = getDailyRegisters();
   renderHomeSnapshot(history[history.length - 1] || null);
-  renderSymptomChart(history);
+  renderHistoryPeriodViews();
   renderSymptomTable(history);
-  renderHistoryInsightCards(history);
   renderDeepInsights(history);
   renderInsightsHero(history);
   renderRecentTrendCards(history);
@@ -3701,6 +3726,7 @@ document.querySelectorAll("[data-period-step]").forEach((button) => {
     const step = Number(button.dataset.periodStep);
     periodIndex = (periodIndex + step + periodLabels.length) % periodLabels.length;
     document.querySelector("[data-period-label]").textContent = periodLabels[periodIndex];
+    renderHistoryPeriodViews();
     showToast(`Per\u00edodo: ${periodLabels[periodIndex]}`);
   });
 });
