@@ -824,6 +824,67 @@ h2 {
   gap: 8px;
 }
 
+.plan-building-panel {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  padding-top: 16px;
+  text-align: center;
+}
+
+.plan-building-title {
+  margin: 0;
+  max-width: 260px;
+  font-size: 17px;
+  font-weight: 850;
+  color: var(--ink);
+}
+
+.plan-building-steps {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.plan-building-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.plan-step-check {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  color: transparent;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.plan-step-check .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.plan-building-steps li.done {
+  color: var(--ink);
+}
+
+.plan-building-steps li.done .plan-step-check {
+  border-color: var(--purple);
+  background: var(--purple);
+  color: #fff;
+}
+
 .card-title-row {
   display: flex;
   justify-content: space-between;

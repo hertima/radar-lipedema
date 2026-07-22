@@ -3508,6 +3508,49 @@ function openSettingsPanel(panelId) {
   settingsSheet.setAttribute("aria-hidden", "false");
 }
 
+function playPlanBuildingAnimation() {
+  settingsPanelTitle.innerHTML = "Preparando seu plano";
+  settingsPanelContent.innerHTML = `
+    <div class="plan-building-panel">
+      <div class="nutrition-ring-wrap">
+        <div class="nutrition-ring" data-plan-ring style="--percent: 0"></div>
+        <div class="nutrition-ring-label"><strong data-plan-percent>0%</strong></div>
+      </div>
+      <p class="plan-building-title">Estamos calculando sua meta individualizada&hellip;</p>
+      <ul class="plan-building-steps">
+        <li data-plan-step="0"><span class="plan-step-check"><svg class="icon"><use href="#i-check"></use></svg></span><span>Analisando seu perfil</span></li>
+        <li data-plan-step="1"><span class="plan-step-check"><svg class="icon"><use href="#i-check"></use></svg></span><span>Calculando seu objetivo cal&oacute;rico</span></li>
+        <li data-plan-step="2"><span class="plan-step-check"><svg class="icon"><use href="#i-check"></use></svg></span><span>Montando seu painel</span></li>
+      </ul>
+    </div>
+  `;
+  settingsSheet.classList.add("open");
+  settingsSheet.setAttribute("aria-hidden", "false");
+
+  const ring = settingsPanelContent.querySelector("[data-plan-ring]");
+  const percentLabel = settingsPanelContent.querySelector("[data-plan-percent]");
+  const steps = Array.from(settingsPanelContent.querySelectorAll("[data-plan-step]"));
+  const stepThresholds = [35, 70, 100];
+
+  let percent = 0;
+  let stepIndex = 0;
+  const timer = setInterval(() => {
+    percent = Math.min(100, percent + 4);
+    ring.style.setProperty("--percent", percent);
+    percentLabel.textContent = `${percent}%`;
+
+    if (stepIndex < stepThresholds.length && percent >= stepThresholds[stepIndex]) {
+      steps[stepIndex]?.classList.add("done");
+      stepIndex += 1;
+    }
+
+    if (percent >= 100) {
+      clearInterval(timer);
+      setTimeout(() => openRegisterPanel("nutrition-dashboard"), 450);
+    }
+  }, 55);
+}
+
 function openRegisterPanel(panelId) {
   const panel = registerPanels[panelId];
   if (!panel) {
@@ -3955,6 +3998,9 @@ settingsPanelContent.addEventListener("submit", (event) => {
     const sex = formData.get("sex") || null;
     const activityLevel = formData.get("activityLevel") || null;
     document.querySelector("#home-title").textContent = `Ol\u00e1, ${name}`;
+
+    const hadGoalBefore = Boolean(computeCalorieGoal(currentProfile, getLatestWeightKg()));
+
     saveProfileToServer({
       name,
       email,
@@ -3968,9 +4014,16 @@ settingsPanelContent.addEventListener("submit", (event) => {
       birthdate,
       sex,
       activityLevel,
-    }).then(() => loadServerState());
-    showToast("Perfil salvo");
-    closeSettingsPanel();
+    }).then(async () => {
+      await loadServerState();
+      const hasGoalNow = Boolean(computeCalorieGoal(currentProfile, getLatestWeightKg()));
+      if (!hadGoalBefore && hasGoalNow) {
+        playPlanBuildingAnimation();
+        return;
+      }
+      showToast("Perfil salvo");
+      closeSettingsPanel();
+    });
     return;
   }
 
