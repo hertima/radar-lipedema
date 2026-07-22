@@ -677,7 +677,7 @@ h2 {
 }
 
 .food-scanner-card-mascot {
-  width: 96px;
+  width: 64px;
   height: auto;
   object-fit: contain;
   flex-shrink: 0;
@@ -685,35 +685,19 @@ h2 {
 
 .flow-icon {
   display: block;
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
-.food-scanner-card > div {
-  flex: 1;
-}
-
-.food-scanner-card .section-label {
-  color: #ffd7f1;
-}
-
 .food-scanner-card strong {
-  display: block;
-  margin: 3px 0 2px;
+  flex: 1;
   font-size: 17px;
 }
 
-.food-scanner-card small {
-  display: block;
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.food-scanner-card .icon {
-  width: 18px;
-  height: 18px;
+.food-scanner-card-camera {
+  width: 22px;
+  height: 22px;
   color: #fff;
   flex-shrink: 0;
 }
@@ -730,6 +714,20 @@ h2 {
   margin: 4px 0 12px;
   font-size: 14px;
   color: var(--purple-deep);
+}
+
+.food-scanner-panel {
+  min-height: calc(100vh - 260px);
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.food-scanner-panel[data-has-result] {
+  min-height: 0;
+  align-content: start;
+  justify-items: stretch;
+  text-align: left;
 }
 
 .cycle-ring {
