@@ -646,6 +646,7 @@ app.get("/api/bootstrap", requireAuth, asyncRoute(async (request, response) => {
             reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
             reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
             height_cm as "heightCm",
+            birthdate, sex, activity_level as "activityLevel",
             updated_at as "updatedAt"
          from profiles where id = $1`,
       [request.userId]
@@ -718,6 +719,22 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
   const heightRaw = Number(request.body.heightCm);
   const heightCm = Number.isFinite(heightRaw) ? Math.max(100, Math.min(230, Math.round(heightRaw))) : null;
 
+  let birthdate = null;
+  if (typeof request.body.birthdate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(request.body.birthdate)) {
+    const parsed = new Date(`${request.body.birthdate}T00:00:00Z`);
+    const ageMs = Date.now() - parsed.getTime();
+    const ageYears = ageMs / (365.25 * 86_400_000);
+    if (!Number.isNaN(parsed.getTime()) && ageYears >= 10 && ageYears <= 100) {
+      birthdate = request.body.birthdate;
+    }
+  }
+
+  const validSexes = ["female", "male"];
+  const sex = validSexes.includes(request.body.sex) ? request.body.sex : null;
+
+  const validActivityLevels = ["sedentary", "light", "moderate", "active", "very_active"];
+  const activityLevel = validActivityLevels.includes(request.body.activityLevel) ? request.body.activityLevel : null;
+
   const result = await pool.query(
     `update profiles set
        name = coalesce(nullif($2, ''), name),
@@ -736,6 +753,9 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
        reminder_cycle_alert_enabled = coalesce($15, reminder_cycle_alert_enabled),
        reminder_weekly_insight_enabled = coalesce($16, reminder_weekly_insight_enabled),
        height_cm = coalesce($17, height_cm),
+       birthdate = coalesce($18, birthdate),
+       sex = coalesce($19, sex),
+       activity_level = coalesce($20, activity_level),
        updated_at = now()
      where id = $1
      returning id, name, email, goal, photo_data_url as "photoDataUrl",
@@ -746,12 +766,13 @@ app.put("/api/profile", requireAuth, asyncRoute(async (request, response) => {
             reminder_daily_enabled as "reminderDailyEnabled", reminder_time as "reminderTime",
             reminder_cycle_alert_enabled as "reminderCycleAlertEnabled", reminder_weekly_insight_enabled as "reminderWeeklyInsightEnabled",
             height_cm as "heightCm",
+            birthdate, sex, activity_level as "activityLevel",
                updated_at as "updatedAt"`,
     [
       request.userId, name, email, goal, photoDataUrl, cycleLength, periodLength, lastPeriodStart,
       lipedemaStage, lipedemaType, garmentCompressionClass, garmentLastReplacedAt,
       reminderDailyEnabled, reminderTime, reminderCycleAlertEnabled, reminderWeeklyInsightEnabled,
-      heightCm,
+      heightCm, birthdate, sex, activityLevel,
     ]
   );
 
@@ -904,9 +925,9 @@ app.post("/api/food-scan", requireAuth, rateLimit("food-scan", 20, 15 * 60 * 100
           role: "system",
           content:
             "Você identifica alimentos em fotos de refeições para um app de saúde. Responda APENAS com JSON no formato " +
-            '{"items":[{"name":"string em português","portion":"string curta descrevendo a porção vista","estimatedCalories":number}]}. ' +
+            '{"items":[{"name":"string em português","portion":"string curta descrevendo a porção vista","estimatedCalories":number,"proteinG":number,"carbsG":number,"fatG":number}]}. ' +
             "Se não conseguir identificar nenhum alimento com confiança razoável, responda com {\"items\":[]}. " +
-            "As calorias são uma estimativa visual aproximada, deixe isso implícito sendo conservadora.",
+            "As calorias e os macronutrientes (proteína, carboidrato e gordura em gramas) são estimativas visuais aproximadas, deixe isso implícito sendo conservadora.",
         },
         {
           role: "user",
@@ -916,7 +937,7 @@ app.post("/api/food-scan", requireAuth, rateLimit("food-scan", 20, 15 * 60 * 100
           ],
         },
       ],
-      max_tokens: 500,
+      max_tokens: 700,
     }),
   });
 
@@ -943,20 +964,31 @@ app.post("/api/food-scan", requireAuth, rateLimit("food-scan", 20, 15 * 60 * 100
       name,
       portion: cleanText(item?.portion, "", 120),
       estimatedCalories: Number.isFinite(Number(item?.estimatedCalories)) ? Math.round(Number(item.estimatedCalories)) : null,
+      proteinG: Number.isFinite(Number(item?.proteinG)) ? Math.round(Number(item.proteinG)) : null,
+      carbsG: Number.isFinite(Number(item?.carbsG)) ? Math.round(Number(item.carbsG)) : null,
+      fatG: Number.isFinite(Number(item?.fatG)) ? Math.round(Number(item.fatG)) : null,
       match,
     };
   });
 
   const totalCalories = results.reduce((total, item) => total + (item.estimatedCalories || 0), 0);
+  const totalProtein = results.reduce((total, item) => total + (item.proteinG || 0), 0);
+  const totalCarbs = results.reduce((total, item) => total + (item.carbsG || 0), 0);
+  const totalFat = results.reduce((total, item) => total + (item.fatG || 0), 0);
+
+  const validMealSlots = ["breakfast", "lunch", "dinner", "snack"];
+  const mealSlot = validMealSlots.includes(request.body.mealSlot) ? request.body.mealSlot : null;
+
+  const payload = { items: results, totalCalories, totalProtein, totalCarbs, totalFat, mealSlot };
 
   const record = await pool.query(
     `insert into records (profile_id, record_type, payload)
      values ($1, 'save-food-scan', $2)
      returning id, record_type as "recordType", payload, created_at as "createdAt"`,
-    [request.userId, JSON.stringify({ items: results, totalCalories })]
+    [request.userId, JSON.stringify(payload)]
   );
 
-  response.json({ ok: true, items: results, totalCalories, record: record.rows[0] });
+  response.json({ ok: true, ...payload, record: record.rows[0] });
 }));
 
 app.get("/api/photos/latest", requireAuth, asyncRoute(async (request, response) => {

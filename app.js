@@ -14,6 +14,7 @@ let profilePhoto = "";
 let activePhotoSlot = "";
 let activePhotoStream = null;
 let activeFoodScanStream = null;
+let activeRegisterPanelId = null;
 const periodLabels = ["\u00daltimos 3 ciclos", "\u00daltimos 6 ciclos", "Ciclo atual"];
 const seriesLabels = {
   dor: "Dor",
@@ -134,6 +135,21 @@ function getPeriodCutoffDate(index) {
 function getPeriodFilteredHistory() {
   const cutoffDate = getPeriodCutoffDate(periodIndex);
   return { history: getDailyRegisters().filter((entry) => entry.date >= cutoffDate), cutoffDate };
+}
+
+function getFoodScanRegisters() {
+  return recordHistory
+    .filter((record) => record.recordType === "save-food-scan")
+    .map((record) => ({
+      date: new Date(record.createdAt),
+      items: Array.isArray(record.payload?.items) ? record.payload.items : [],
+      totalCalories: Number(record.payload?.totalCalories) || 0,
+      totalProtein: Number(record.payload?.totalProtein) || 0,
+      totalCarbs: Number(record.payload?.totalCarbs) || 0,
+      totalFat: Number(record.payload?.totalFat) || 0,
+      mealSlot: record.payload?.mealSlot || null,
+    }))
+    .sort((a, b) => a.date - b.date);
 }
 
 function getDailyRegisters() {
@@ -1148,6 +1164,123 @@ function buildPremiumDataset() {
   };
 }
 
+const dietMacroRatios = { carbs: 0.45, protein: 0.25, fat: 0.30 };
+const activityMultipliers = {
+  sedentary: 1.2,
+  light: 1.375,
+  moderate: 1.55,
+  active: 1.725,
+  very_active: 1.9,
+};
+const mealSlotLabels = {
+  breakfast: "Café da manhã",
+  lunch: "Almoço",
+  snack: "Lanche",
+  dinner: "Jantar",
+};
+const mealSlotOrder = ["breakfast", "lunch", "snack", "dinner"];
+
+function inferMealSlot(date = new Date()) {
+  const hour = date.getHours();
+  if (hour >= 5 && hour < 11) return "breakfast";
+  if (hour >= 11 && hour < 15) return "lunch";
+  if (hour >= 15 && hour < 18) return "snack";
+  if (hour >= 18 && hour < 23) return "dinner";
+  return "snack";
+}
+
+function getLatestWeightKg() {
+  const record = recordHistory.find((entry) => entry.recordType === "save-weight" && typeof entry.payload?.weight === "number");
+  return record ? Number(record.payload.weight) : null;
+}
+
+function getStepsToday() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const record = recordHistory.find((entry) => {
+    if (entry.recordType !== "save-steps") return false;
+    const day = new Date(entry.createdAt);
+    day.setHours(0, 0, 0, 0);
+    return day.getTime() === today.getTime();
+  });
+  return record ? Number(record.payload?.steps) || 0 : 0;
+}
+
+function computeCaloriesBurnedFromSteps(steps, weightKg) {
+  if (!steps || !weightKg) {
+    return 0;
+  }
+  return Math.round(steps * weightKg * 0.0005);
+}
+
+function computeCalorieGoal(profile, weightKg) {
+  if (!profile?.birthdate || !profile?.sex || !profile?.activityLevel || !profile?.heightCm || !weightKg) {
+    return null;
+  }
+
+  const birth = new Date(`${String(profile.birthdate).slice(0, 10)}T00:00:00`);
+  const ageMs = Date.now() - birth.getTime();
+  const age = Math.floor(ageMs / (365.25 * 86_400_000));
+  const heightCm = Number(profile.heightCm);
+
+  const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + (profile.sex === "male" ? 5 : -161);
+  const multiplier = activityMultipliers[profile.activityLevel] || activityMultipliers.sedentary;
+  const calorieGoal = Math.round(bmr * multiplier);
+
+  return {
+    age,
+    calorieGoal,
+    carbsG: Math.round((calorieGoal * dietMacroRatios.carbs) / 4),
+    proteinG: Math.round((calorieGoal * dietMacroRatios.protein) / 4),
+    fatG: Math.round((calorieGoal * dietMacroRatios.fat) / 9),
+  };
+}
+
+function buildNutritionDashboard() {
+  const weightKg = getLatestWeightKg();
+  const goal = computeCalorieGoal(currentProfile, weightKg);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayScans = getFoodScanRegisters().filter((entry) => {
+    const day = new Date(entry.date);
+    day.setHours(0, 0, 0, 0);
+    return day.getTime() === today.getTime();
+  });
+
+  const consumedCalories = todayScans.reduce((total, entry) => total + entry.totalCalories, 0);
+  const consumedProtein = todayScans.reduce((total, entry) => total + entry.totalProtein, 0);
+  const consumedCarbs = todayScans.reduce((total, entry) => total + entry.totalCarbs, 0);
+  const consumedFat = todayScans.reduce((total, entry) => total + entry.totalFat, 0);
+
+  const steps = getStepsToday();
+  const caloriesBurned = computeCaloriesBurnedFromSteps(steps, weightKg);
+  const remaining = goal ? goal.calorieGoal - consumedCalories + caloriesBurned : null;
+
+  const meals = mealSlotOrder.map((slot) => ({
+    slot,
+    label: mealSlotLabels[slot],
+    entries: todayScans.filter((entry) => entry.mealSlot === slot),
+  }));
+  const otherEntries = todayScans.filter((entry) => !mealSlotOrder.includes(entry.mealSlot));
+  if (otherEntries.length) {
+    meals.push({ slot: "other", label: "Outros horários", entries: otherEntries });
+  }
+
+  return {
+    goal,
+    weightKg,
+    steps,
+    caloriesBurned,
+    consumedCalories,
+    consumedProtein,
+    consumedCarbs,
+    consumedFat,
+    remaining,
+    meals,
+  };
+}
+
 function computeStreak(history) {
   if (!history.length) {
     return 0;
@@ -1791,23 +1924,7 @@ function renderFoodScanResult(result) {
     return;
   }
 
-  const itemsHtml = result.items
-    .map((item) => {
-      const color = item.match ? (item.match.category === "good" ? "teal" : "pink") : "orange";
-      const verdict = item.match
-        ? item.match.category === "good"
-          ? `Está na lista de alimentos anti-inflamatórios: <strong>${item.match.name}</strong>.`
-          : `Está na lista de alimentos a evitar: <strong>${item.match.name}</strong>.`
-        : "Sem correspondência direta na nossa lista — classificação apenas da estimativa da IA.";
-      const calories = item.estimatedCalories !== null ? `~${item.estimatedCalories} kcal` : "calorias não estimadas";
-      return `
-        <article>
-          <span class="round-icon ${color}"></span>
-          <p><strong>${item.name}</strong>${item.portion ? ` (${item.portion})` : ""} — ${calories}. ${verdict}</p>
-        </article>
-      `;
-    })
-    .join("");
+  const itemsHtml = result.items.map((item) => renderFoodScanItemHtml(item)).join("");
 
   body.innerHTML = `
     <p class="diet-guide-intro">Estimativa da IA a partir da foto — não é uma pesagem exata.</p>
@@ -1817,9 +1934,34 @@ function renderFoodScanResult(result) {
   `;
 }
 
+function renderFoodScanItemHtml(item) {
+  const color = item.match ? (item.match.category === "good" ? "teal" : "pink") : "orange";
+  const verdict = item.match
+    ? item.match.category === "good"
+      ? `Está na lista de alimentos anti-inflamatórios: <strong>${item.match.name}</strong>.`
+      : `Está na lista de alimentos a evitar: <strong>${item.match.name}</strong>.`
+    : "Sem correspondência direta na nossa lista — classificação apenas da estimativa da IA.";
+  const calories = item.estimatedCalories !== null ? `~${item.estimatedCalories} kcal` : "calorias não estimadas";
+  return `
+    <article>
+      <span class="round-icon ${color}"></span>
+      <p><strong>${item.name}</strong>${item.portion ? ` (${item.portion})` : ""} — ${calories}. ${verdict}</p>
+    </article>
+  `;
+}
+
 async function submitFoodScan(imageDataUrl) {
   renderFoodScanLoading();
-  const result = await apiRequest("/api/food-scan", { method: "POST", body: { imageDataUrl } });
+  const mealSlot = inferMealSlot();
+  const result = await apiRequest("/api/food-scan", { method: "POST", body: { imageDataUrl, mealSlot } });
+
+  if (activeRegisterPanelId === "nutrition-dashboard") {
+    await loadServerState();
+    openRegisterPanel("nutrition-dashboard");
+    showToast(result?.ok === false ? result.error || "Não foi possível analisar a foto agora." : "Prato adicionado");
+    return;
+  }
+
   renderFoodScanResult(result);
 }
 
@@ -2458,6 +2600,21 @@ const settingsPanels = {
       const compressionClass = currentProfile?.garmentCompressionClass || "";
       const compressionOptions = ["15-20 mmHg", "20-30 mmHg", "30-40 mmHg", "40-50 mmHg"];
 
+      const birthdate = currentProfile?.birthdate ? String(currentProfile.birthdate).slice(0, 10) : "";
+      const sex = currentProfile?.sex || "";
+      const sexOptions = [
+        ["female", "Feminino"],
+        ["male", "Masculino"],
+      ];
+      const activityLevel = currentProfile?.activityLevel || "";
+      const activityLevelOptions = [
+        ["sedentary", "Sedentário (pouco ou nenhum exercício)"],
+        ["light", "Leve (exercício leve 1-3x/semana)"],
+        ["moderate", "Moderado (exercício moderado 3-5x/semana)"],
+        ["active", "Ativo (exercício intenso 6-7x/semana)"],
+        ["very_active", "Muito ativo (exercício intenso diário ou físico)"],
+      ];
+
       const garmentLastReplacedAt = currentProfile?.garmentLastReplacedAt
         ? String(currentProfile.garmentLastReplacedAt).slice(0, 10)
         : "";
@@ -2504,8 +2661,17 @@ const settingsPanels = {
               ${goalOptions.map((option) => `<option${option === goal ? " selected" : ""}>${escapeHtml(option)}</option>`).join("")}
             </select>
           </label>
-          <label class="settings-field">Altura <small>(cm — usada para calcular seu IMC)</small>
+          <label class="settings-field">Altura <small>(cm — usada para calcular seu IMC e sua meta calórica)</small>
             <input name="heightCm" type="number" min="100" max="230" inputmode="numeric" value="${currentProfile?.heightCm || ""}" placeholder="Ex.: 165">
+          </label>
+          <label class="settings-field">Data de nascimento <small>(usada para calcular sua meta calórica individual)</small>
+            <input type="date" name="birthdate" value="${birthdate}" max="${today}">
+          </label>
+          <label class="settings-field">Sexo biológico <small>(usado para calcular sua meta calórica individual)</small>
+            <select name="sex">${buildOptions(sexOptions, sex, true)}</select>
+          </label>
+          <label class="settings-field">Nível de atividade física <small>(usado para calcular sua meta calórica individual)</small>
+            <select name="activityLevel">${buildOptions(activityLevelOptions, activityLevel, true)}</select>
           </label>
           <label class="settings-field">Estágio do lipedema <small>(conforme diagnóstico médico)</small>
             <select name="lipedemaStage">${buildOptions(stageOptions, stage, true)}</select>
@@ -3069,6 +3235,88 @@ const registerPanels = {
       `;
     },
   },
+  "nutrition-dashboard": {
+    title: "Hoje",
+    render() {
+      const data = buildNutritionDashboard();
+
+      if (!data.goal) {
+        return `
+          <div class="smart-register-panel nutrition-dashboard-panel">
+            <img src="imagem/imagem/scanner de alimentos-intro.png" alt="" class="food-scanner-mascot">
+            <p class="diet-guide-intro">Informe idade, sexo e n&iacute;vel de atividade em Ajustes &gt; Perfil, e registre seu peso em Registrar &gt; Peso, para calcular sua meta cal&oacute;rica individualizada.</p>
+            <button class="panel-button" type="button" data-settings-panel="profile">Completar perfil</button>
+            <button class="panel-button secondary" type="button" data-open-register-panel="food-scanner">Escanear um prato mesmo assim</button>
+          </div>
+        `;
+      }
+
+      const percent = Math.max(0, Math.min(100, Math.round((data.consumedCalories / data.goal.calorieGoal) * 100)));
+
+      const macroRow = (label, consumed, goal, color) => {
+        const value = goal ? Math.max(0, Math.min(100, Math.round((consumed / goal) * 100))) : 0;
+        return `
+          <div class="metric-row" style="--value: ${value}%; --color: ${color}">
+            <span>${label}</span><span>${consumed} / ${goal} g</span><i></i>
+          </div>
+        `;
+      };
+
+      const mealsWithFood = data.meals.filter((meal) => meal.entries.length);
+      const mealsHtml = mealsWithFood.length
+        ? mealsWithFood
+            .map(
+              (meal) => `
+                <div class="nutrition-meal-group">
+                  <p class="section-label">${meal.label}</p>
+                  <div class="insight-list">
+                    ${meal.entries.map((entry) => entry.items.map((item) => renderFoodScanItemHtml(item)).join("")).join("")}
+                  </div>
+                </div>
+              `
+            )
+            .join("")
+        : `<p class="diet-guide-note">Nenhum prato escaneado hoje ainda.</p>`;
+
+      return `
+        <div class="smart-register-panel nutrition-dashboard-panel">
+          <div class="nutrition-ring-wrap">
+            <div class="nutrition-ring" style="--percent: ${percent}"></div>
+            <div class="nutrition-ring-label">
+              <strong>${data.remaining}</strong>
+              <span>kcal restantes</span>
+            </div>
+          </div>
+          <div class="nutrition-summary-row">
+            <div><strong>${data.consumedCalories}</strong><span>Consumidas</span></div>
+            <div><strong>${data.goal.calorieGoal}</strong><span>Meta</span></div>
+            <div><strong>${data.caloriesBurned}</strong><span>Gastas</span></div>
+          </div>
+
+          ${macroRow("Carboidratos", data.consumedCarbs, data.goal.carbsG, "var(--purple)")}
+          ${macroRow("Prote&iacute;na", data.consumedProtein, data.goal.proteinG, "var(--pink)")}
+          ${macroRow("Gordura", data.consumedFat, data.goal.fatG, "var(--orange)")}
+
+          <div class="nutrition-steps-row">
+            <label class="settings-field">Passos de hoje <small>(usados para estimar calorias gastas)</small>
+              <input type="number" inputmode="numeric" min="0" data-steps-input value="${data.steps || ""}" placeholder="Ex.: 6000">
+            </label>
+            <button class="panel-button secondary" type="button" data-panel-action="save-steps">Salvar passos</button>
+          </div>
+
+          <p class="section-label">Alimenta&ccedil;&atilde;o de hoje</p>
+          ${mealsHtml}
+
+          <div data-food-scan-body>
+            <button class="panel-button" type="button" data-panel-action="open-food-scan-camera">Escanear novo prato</button>
+            <input type="file" accept="image/*" capture="environment" data-food-scan-input hidden>
+          </div>
+
+          <p class="diet-guide-note">Estimativa da IA a partir das fotos escaneadas &mdash; n&atilde;o &eacute; uma pesagem exata. Meta calculada com a f&oacute;rmula de Mifflin-St Jeor a partir do seu perfil.</p>
+        </div>
+      `;
+    },
+  },
   "food-scanner": {
     title: "Scanner de alimentos",
     render() {
@@ -3264,6 +3512,7 @@ function openRegisterPanel(panelId) {
     return;
   }
 
+  activeRegisterPanelId = panelId;
   settingsPanelTitle.innerHTML = panel.title;
   settingsPanelContent.innerHTML = panel.render();
   settingsSheet.classList.add("open");
@@ -3700,6 +3949,9 @@ settingsPanelContent.addEventListener("submit", (event) => {
     const garmentCompressionClass = formData.get("garmentCompressionClass") || null;
     const garmentLastReplacedAt = formData.get("garmentLastReplacedAt") || null;
     const heightCm = formData.get("heightCm") || null;
+    const birthdate = formData.get("birthdate") || null;
+    const sex = formData.get("sex") || null;
+    const activityLevel = formData.get("activityLevel") || null;
     document.querySelector("#home-title").textContent = `Ol\u00e1, ${name}`;
     saveProfileToServer({
       name,
@@ -3711,6 +3963,9 @@ settingsPanelContent.addEventListener("submit", (event) => {
       garmentCompressionClass,
       garmentLastReplacedAt,
       heightCm,
+      birthdate,
+      sex,
+      activityLevel,
     }).then(() => loadServerState());
     showToast("Perfil salvo");
     closeSettingsPanel();
@@ -4002,6 +4257,17 @@ settingsPanelContent.addEventListener("click", (event) => {
     }).then(() => loadServerState());
     showToast(`MLS: ${score}/40 pontos`);
     closeSettingsPanel();
+    return;
+  }
+
+  if (actionName === "save-steps") {
+    const stepsInput = settingsPanelContent.querySelector("[data-steps-input]");
+    const steps = Math.max(0, Math.round(Number(stepsInput?.value) || 0));
+    saveRecordToServer("save-steps", { steps, savedAt: new Date().toISOString() }).then(async () => {
+      await loadServerState();
+      openRegisterPanel("nutrition-dashboard");
+    });
+    showToast("Passos salvos");
     return;
   }
 
