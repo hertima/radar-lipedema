@@ -721,6 +721,10 @@ h2 {
   text-align: center;
 }
 
+.food-scanner-panel .panel-button {
+  width: 100%;
+}
+
 .food-scanner-panel[data-has-result] {
   text-align: left;
 }
