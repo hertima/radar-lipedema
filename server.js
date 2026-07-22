@@ -979,7 +979,7 @@ app.post("/api/food-scan", requireAuth, rateLimit("food-scan", 20, 15 * 60 * 100
   const validMealSlots = ["breakfast", "lunch", "dinner", "snack"];
   const mealSlot = validMealSlots.includes(request.body.mealSlot) ? request.body.mealSlot : null;
 
-  const payload = { items: results, totalCalories, totalProtein, totalCarbs, totalFat, mealSlot };
+  const payload = { items: results, totalCalories, totalProtein, totalCarbs, totalFat, mealSlot, photoDataUrl: imageDataUrl };
 
   const record = await pool.query(
     `insert into records (profile_id, record_type, payload)

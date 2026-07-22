@@ -752,14 +752,27 @@ h2 {
   margin: 4px auto 0;
 }
 
-.nutrition-ring {
+.nutrition-ring-svg {
+  display: block;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
-  background:
-    conic-gradient(var(--purple) 0 calc(var(--percent, 0) * 3.6deg), #eadbff 0),
-    #eadbff;
-  mask: radial-gradient(circle 58px, transparent 98%, #000 100%);
+  transform: rotate(-90deg);
+}
+
+.nutrition-ring-track {
+  fill: none;
+  stroke: #eadbff;
+  stroke-width: 10;
+}
+
+.nutrition-ring-progress {
+  fill: none;
+  stroke: var(--purple);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 326.7;
+  stroke-dashoffset: calc(326.7 - (326.7 * var(--percent, 0) / 100));
+  transition: stroke-dashoffset 0.3s ease;
 }
 
 .nutrition-ring-label {
@@ -805,14 +818,49 @@ h2 {
   color: var(--muted);
 }
 
-.nutrition-steps-row {
+.nutrition-meal-group {
   display: grid;
   gap: 8px;
 }
 
-.nutrition-meal-group {
+.action-plan-phase {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.action-plan-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+}
+
+.action-plan-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.action-plan-item .round-icon {
+  margin-top: 2px;
+}
+
+.action-plan-item strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 13px;
+}
+
+.action-plan-item p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 .nutrition-meal-row {
@@ -833,8 +881,15 @@ h2 {
   place-items: center;
   width: 40px;
   height: 40px;
+  overflow: hidden;
   border: 2px solid var(--teal);
   border-radius: 50%;
+}
+
+.nutrition-meal-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .nutrition-meal-icon .round-icon {
@@ -3542,7 +3597,10 @@ input[type="range"] {
 
 .settings-sheet {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 78px;
   z-index: 12;
   display: none;
 }
@@ -4019,6 +4077,10 @@ input[type="range"] {
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     padding-left: calc(6px + env(safe-area-inset-left, 0px));
     padding-right: calc(6px + env(safe-area-inset-right, 0px));
+  }
+
+  .settings-sheet {
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
   }
 
   .toast {

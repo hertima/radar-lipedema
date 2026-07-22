@@ -148,6 +148,7 @@ function getFoodScanRegisters() {
       totalCarbs: Number(record.payload?.totalCarbs) || 0,
       totalFat: Number(record.payload?.totalFat) || 0,
       mealSlot: record.payload?.mealSlot || null,
+      photoDataUrl: record.payload?.photoDataUrl || null,
     }))
     .sort((a, b) => a.date - b.date);
 }
@@ -1005,21 +1006,30 @@ function buildActionPlanHtml(profile, history) {
   const worst = computeInsights(history).find((insight) => insight.text.includes("maior média"));
 
   return `
-    <p class="diet-guide-intro">Fase ${info.phase} — Dia ${info.cycleDay} de ${info.cycleLength}${
-      worst ? `. Seu sintoma de maior atenção agora: <strong>${worst.label}</strong>.` : ""
+    <p class="action-plan-phase">Fase ${info.phase} &mdash; Dia ${info.cycleDay} de ${info.cycleLength}${
+      worst ? `. Sintoma de maior aten&ccedil;&atilde;o: <strong>${worst.label}</strong>.` : ""
     }</p>
-    <div class="insight-list">
-      <article>
+    <div class="action-plan-list">
+      <article class="action-plan-item">
         <span class="round-icon teal"></span>
-        <p><strong>Exercício</strong> ${plan.exercise}</p>
+        <div>
+          <strong>Exerc&iacute;cio</strong>
+          <p>${plan.exercise}</p>
+        </div>
       </article>
-      <article>
+      <article class="action-plan-item">
         <span class="round-icon orange"></span>
-        <p><strong>Nutrição</strong> ${plan.nutrition}</p>
+        <div>
+          <strong>Nutri&ccedil;&atilde;o</strong>
+          <p>${plan.nutrition}</p>
+        </div>
       </article>
-      <article>
+      <article class="action-plan-item">
         <span class="round-icon pink"></span>
-        <p><strong>Manejo do estresse</strong> ${plan.stress}</p>
+        <div>
+          <strong>Manejo do estresse</strong>
+          <p>${plan.stress}</p>
+        </div>
       </article>
     </div>
   `;
@@ -1211,25 +1221,6 @@ function getLatestWeightKg() {
   return record ? Number(record.payload.weight) : null;
 }
 
-function getStepsToday() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const record = recordHistory.find((entry) => {
-    if (entry.recordType !== "save-steps") return false;
-    const day = new Date(entry.createdAt);
-    day.setHours(0, 0, 0, 0);
-    return day.getTime() === today.getTime();
-  });
-  return record ? Number(record.payload?.steps) || 0 : 0;
-}
-
-function computeCaloriesBurnedFromSteps(steps, weightKg) {
-  if (!steps || !weightKg) {
-    return 0;
-  }
-  return Math.round(steps * weightKg * 0.0005);
-}
-
 function computeCalorieGoal(profile, weightKg) {
   if (!profile?.birthdate || !profile?.sex || !profile?.activityLevel || !profile?.heightCm || !weightKg) {
     return null;
@@ -1270,9 +1261,7 @@ function buildNutritionDashboard() {
   const consumedCarbs = todayScans.reduce((total, entry) => total + entry.totalCarbs, 0);
   const consumedFat = todayScans.reduce((total, entry) => total + entry.totalFat, 0);
 
-  const steps = getStepsToday();
-  const caloriesBurned = computeCaloriesBurnedFromSteps(steps, weightKg);
-  const remaining = goal ? goal.calorieGoal - consumedCalories + caloriesBurned : null;
+  const remaining = goal ? goal.calorieGoal - consumedCalories : null;
 
   const meals = mealSlotOrder.map((slot) => {
     const entries = todayScans.filter((entry) => entry.mealSlot === slot);
@@ -1298,8 +1287,6 @@ function buildNutritionDashboard() {
   return {
     goal,
     weightKg,
-    steps,
-    caloriesBurned,
     consumedCalories,
     consumedProtein,
     consumedCarbs,
@@ -3209,9 +3196,13 @@ const registerPanels = {
           const itemNames = meal.entries.flatMap((entry) => entry.items.map((item) => item.name));
           const description = itemNames.length ? itemNames.join(", ") : "Nenhum alimento registrado ainda";
           const kcalLabel = meal.goalCalories !== null ? `${meal.consumedCalories} / ${meal.goalCalories} kcal` : `${meal.consumedCalories} kcal`;
+          const lastPhoto = [...meal.entries].reverse().find((entry) => entry.photoDataUrl)?.photoDataUrl;
+          const iconHtml = lastPhoto
+            ? `<img src="${lastPhoto}" alt="">`
+            : `<span class="round-icon teal"></span>`;
           return `
             <div class="nutrition-meal-row">
-              <span class="nutrition-meal-icon"><span class="round-icon teal"></span></span>
+              <span class="nutrition-meal-icon">${iconHtml}</span>
               <div class="nutrition-meal-info">
                 <strong>${meal.label}</strong>
                 <span class="nutrition-meal-kcal">${kcalLabel}</span>
@@ -3294,7 +3285,10 @@ const registerPanels = {
       return `
         <div class="smart-register-panel nutrition-dashboard-panel">
           <div class="nutrition-ring-wrap">
-            <div class="nutrition-ring" style="--percent: ${percent}"></div>
+            <svg class="nutrition-ring-svg" viewBox="0 0 120 120">
+              <circle class="nutrition-ring-track" cx="60" cy="60" r="52"></circle>
+              <circle class="nutrition-ring-progress" cx="60" cy="60" r="52" style="--percent: ${percent}"></circle>
+            </svg>
             <div class="nutrition-ring-label">
               <strong>${data.remaining}</strong>
               <span>kcal restantes</span>
@@ -3303,7 +3297,6 @@ const registerPanels = {
           <div class="nutrition-summary-row">
             <div><strong>${data.consumedCalories}</strong><span>Consumidas</span></div>
             <div><strong>${data.goal.calorieGoal}</strong><span>Meta</span></div>
-            <div><strong>${data.caloriesBurned}</strong><span>Gastas</span></div>
           </div>
 
           ${macroRow("Carboidratos", data.consumedCarbs, data.goal.carbsG, "var(--purple)")}
@@ -3312,13 +3305,6 @@ const registerPanels = {
 
           <p class="section-label">Plano de a&ccedil;&atilde;o de hoje</p>
           ${buildActionPlanHtml(currentProfile, getDailyRegisters())}
-
-          <div class="nutrition-steps-row">
-            <label class="settings-field">Passos de hoje <small>(usados para estimar calorias gastas)</small>
-              <input type="number" inputmode="numeric" min="0" data-steps-input value="${data.steps || ""}" placeholder="Ex.: 6000">
-            </label>
-            <button class="panel-button secondary" type="button" data-panel-action="save-steps">Salvar passos</button>
-          </div>
 
           <p class="section-label">Alimenta&ccedil;&atilde;o de hoje</p>
           ${mealsHtml}
@@ -3555,7 +3541,10 @@ function playPlanBuildingAnimation({
   settingsPanelContent.innerHTML = `
     <div class="plan-building-panel">
       <div class="nutrition-ring-wrap">
-        <div class="nutrition-ring" data-plan-ring style="--percent: 0"></div>
+        <svg class="nutrition-ring-svg" viewBox="0 0 120 120">
+          <circle class="nutrition-ring-track" cx="60" cy="60" r="52"></circle>
+          <circle class="nutrition-ring-progress" data-plan-ring cx="60" cy="60" r="52" style="--percent: 0"></circle>
+        </svg>
         <div class="nutrition-ring-label"><strong data-plan-percent>0%</strong></div>
       </div>
       <p class="plan-building-title">${message}</p>
@@ -3631,6 +3620,7 @@ navButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const target = button.dataset.target;
     if (target) {
+      closeSettingsPanel();
       showScreen(target);
     }
   });
@@ -4404,17 +4394,6 @@ settingsPanelContent.addEventListener("click", (event) => {
     }).then(() => loadServerState());
     showToast(`MLS: ${score}/40 pontos`);
     closeSettingsPanel();
-    return;
-  }
-
-  if (actionName === "save-steps") {
-    const stepsInput = settingsPanelContent.querySelector("[data-steps-input]");
-    const steps = Math.max(0, Math.round(Number(stepsInput?.value) || 0));
-    saveRecordToServer("save-steps", { steps, savedAt: new Date().toISOString() }).then(async () => {
-      await loadServerState();
-      openRegisterPanel("nutrition-dashboard");
-    });
-    showToast("Passos salvos");
     return;
   }
 
