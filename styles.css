@@ -677,10 +677,17 @@ h2 {
 }
 
 .food-scanner-card-mascot {
-  width: 74px;
+  width: 96px;
   height: auto;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.flow-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 
 .food-scanner-card > div {
