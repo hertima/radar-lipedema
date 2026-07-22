@@ -885,6 +885,40 @@ h2 {
   color: #fff;
 }
 
+.diet-plan-days {
+  display: grid;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.diet-plan-day {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.diet-plan-day p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.diet-plan-day .section-label {
+  margin-bottom: 2px;
+  color: var(--muted);
+}
+
+.diet-plan-day.today {
+  border-color: var(--purple);
+  background: var(--soft);
+}
+
+.diet-plan-day.today .section-label {
+  color: var(--purple);
+}
+
 .card-title-row {
   display: flex;
   justify-content: space-between;

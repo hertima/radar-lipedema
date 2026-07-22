@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const { Pool } = require("pg");
-const { matchFoodInGuide } = require("./foodGuide.js");
+const { matchFoodInGuide, antiInflammatoryFoodGuide } = require("./foodGuide.js");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -984,6 +984,83 @@ app.post("/api/food-scan", requireAuth, rateLimit("food-scan", 20, 15 * 60 * 100
   const record = await pool.query(
     `insert into records (profile_id, record_type, payload)
      values ($1, 'save-food-scan', $2)
+     returning id, record_type as "recordType", payload, created_at as "createdAt"`,
+    [request.userId, JSON.stringify(payload)]
+  );
+
+  response.json({ ok: true, ...payload, record: record.rows[0] });
+}));
+
+app.post("/api/diet-plan", requireAuth, rateLimit("diet-plan", 5, 60 * 60 * 1000), asyncRoute(async (request, response) => {
+  if (!process.env.OPENAI_API_KEY) {
+    response.status(503).json({ ok: false, error: "Gerador de plano ainda não está configurado neste servidor." });
+    return;
+  }
+
+  const goodList = antiInflammatoryFoodGuide.good.map((entry) => entry.name).join(", ");
+  const avoidList = antiInflammatoryFoodGuide.avoid.map((entry) => entry.name).join(", ");
+
+  const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Você monta um plano alimentar anti-inflamatório de 21 dias para uma pessoa com lipedema, para uso geral (não é uma prescrição individual). " +
+            `Priorize estes grupos de alimentos: ${goodList}. Evite ou reduza estes: ${avoidList}. ` +
+            'Responda APENAS com JSON no formato {"days":[{"day":1,"breakfast":"string curta","lunch":"string curta","snack":"string curta","dinner":"string curta"}]}, com exatamente 21 itens no array "days", numerados de 1 a 21. ' +
+            "Cada refeição deve ser uma sugestão curta (uma frase, sem receita detalhada), variando ao longo dos 21 dias.",
+        },
+        {
+          role: "user",
+          content: "Gere o plano alimentar anti-inflamatório de 21 dias.",
+        },
+      ],
+      max_tokens: 2500,
+    }),
+  });
+
+  if (!aiResponse.ok) {
+    const errorBody = await aiResponse.text().catch(() => "");
+    console.error("Falha ao gerar plano de dieta:", aiResponse.status, errorBody);
+    response.status(502).json({ ok: false, error: "Não foi possível gerar o plano agora. Tente novamente em instantes." });
+    return;
+  }
+
+  const aiData = await aiResponse.json();
+  let parsed;
+  try {
+    parsed = JSON.parse(aiData.choices?.[0]?.message?.content || "{}");
+  } catch (error) {
+    parsed = { days: [] };
+  }
+
+  const rawDays = Array.isArray(parsed.days) ? parsed.days.slice(0, 21) : [];
+  const days = rawDays.map((entry, index) => ({
+    day: index + 1,
+    breakfast: cleanText(entry?.breakfast, "", 200),
+    lunch: cleanText(entry?.lunch, "", 200),
+    snack: cleanText(entry?.snack, "", 200),
+    dinner: cleanText(entry?.dinner, "", 200),
+  }));
+
+  if (days.length < 21) {
+    response.status(502).json({ ok: false, error: "O plano veio incompleto. Tente gerar novamente." });
+    return;
+  }
+
+  const payload = { days, generatedAt: new Date().toISOString() };
+
+  const record = await pool.query(
+    `insert into records (profile_id, record_type, payload)
+     values ($1, 'diet-plan', $2)
      returning id, record_type as "recordType", payload, created_at as "createdAt"`,
     [request.userId, JSON.stringify(payload)]
   );

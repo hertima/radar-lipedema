@@ -1181,6 +1181,19 @@ function inferMealSlot(date = new Date()) {
   return "snack";
 }
 
+function getDietPlanRecord() {
+  return recordHistory.find((record) => record.recordType === "diet-plan" && Array.isArray(record.payload?.days));
+}
+
+function getDietPlanDayIndex(generatedAt) {
+  const start = new Date(generatedAt);
+  start.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysSince = Math.round((today - start) / 86_400_000);
+  return Math.max(0, Math.min(20, daysSince));
+}
+
 function getLatestWeightKg() {
   const record = recordHistory.find((entry) => entry.recordType === "save-weight" && typeof entry.payload?.weight === "number");
   return record ? Number(record.payload.weight) : null;
@@ -3238,6 +3251,7 @@ const registerPanels = {
             <p class="diet-guide-intro">Informe idade, sexo e n&iacute;vel de atividade em Ajustes &gt; Perfil, e registre seu peso em Registrar &gt; Peso, para calcular sua meta cal&oacute;rica individualizada.</p>
             <button class="panel-button" type="button" data-settings-panel="profile">Completar perfil</button>
             <button class="panel-button secondary" type="button" data-open-register-panel="food-scanner">Escanear um prato mesmo assim</button>
+            <button class="panel-button secondary" type="button" data-open-register-panel="diet-plan">Plano alimentar de 21 dias</button>
             <button class="text-button diet-guide-link" type="button" data-open-register-panel="diet-guide">O que &eacute; alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria? Ver orienta&ccedil;&otilde;es</button>
           </div>
         `;
@@ -3308,7 +3322,48 @@ const registerPanels = {
           </div>
 
           <p class="diet-guide-note">Estimativa da IA a partir das fotos escaneadas &mdash; n&atilde;o &eacute; uma pesagem exata. Meta calculada com a f&oacute;rmula de Mifflin-St Jeor a partir do seu perfil.</p>
+          <button class="panel-button secondary" type="button" data-open-register-panel="diet-plan">Plano alimentar de 21 dias</button>
           <button class="text-button diet-guide-link" type="button" data-open-register-panel="diet-guide">O que &eacute; alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria? Ver orienta&ccedil;&otilde;es</button>
+        </div>
+      `;
+    },
+  },
+  "diet-plan": {
+    title: "Plano de 21 dias",
+    render() {
+      const record = getDietPlanRecord();
+
+      if (!record) {
+        return `
+          <div class="smart-register-panel diet-plan-panel">
+            <p class="diet-guide-intro">Uma IA monta um plano alimentar anti-inflamat&oacute;rio de 21 dias &mdash; caf&eacute; da manh&atilde;, almo&ccedil;o, lanche e jantar &mdash; priorizando os alimentos do guia anti-inflamat&oacute;rio. &Eacute; uma sugest&atilde;o geral, n&atilde;o uma prescri&ccedil;&atilde;o individual.</p>
+            <button class="panel-button" type="button" data-panel-action="generate-diet-plan">Gerar plano de 21 dias com IA</button>
+          </div>
+        `;
+      }
+
+      const days = record.payload.days;
+      const todayIndex = getDietPlanDayIndex(record.payload.generatedAt);
+
+      const daysHtml = days
+        .map(
+          (day, index) => `
+            <article class="diet-plan-day${index === todayIndex ? " today" : ""}">
+              <p class="section-label">Dia ${day.day}${index === todayIndex ? " &mdash; hoje" : ""}</p>
+              <p><strong>Caf&eacute; da manh&atilde;:</strong> ${day.breakfast}</p>
+              <p><strong>Almo&ccedil;o:</strong> ${day.lunch}</p>
+              <p><strong>Lanche:</strong> ${day.snack}</p>
+              <p><strong>Jantar:</strong> ${day.dinner}</p>
+            </article>
+          `
+        )
+        .join("");
+
+      return `
+        <div class="smart-register-panel diet-plan-panel">
+          <p class="diet-guide-intro">Sugest&atilde;o geral da IA, priorizando os alimentos do guia anti-inflamat&oacute;rio &mdash; ajuste com um nutricionista que conhe&ccedil;a lipedema.</p>
+          <div class="diet-plan-days">${daysHtml}</div>
+          <button class="panel-button secondary" type="button" data-panel-action="generate-diet-plan">Gerar novo plano</button>
         </div>
       `;
     },
@@ -4323,6 +4378,21 @@ settingsPanelContent.addEventListener("click", (event) => {
       openRegisterPanel("nutrition-dashboard");
     });
     showToast("Passos salvos");
+    return;
+  }
+
+  if (actionName === "generate-diet-plan") {
+    settingsPanelContent.innerHTML = `<div class="smart-register-panel diet-plan-panel"><p class="diet-guide-intro">Gerando seu plano de 21 dias com IA&hellip; isso pode levar alguns segundos.</p></div>`;
+    apiRequest("/api/diet-plan", { method: "POST" }).then(async (result) => {
+      if (!result || result.ok === false) {
+        showToast(result?.error || "Não foi possível gerar o plano agora.");
+        openRegisterPanel("diet-plan");
+        return;
+      }
+      await loadServerState();
+      openRegisterPanel("diet-plan");
+      showToast("Plano de 21 dias gerado");
+    });
     return;
   }
 
