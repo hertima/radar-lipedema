@@ -14,7 +14,6 @@ let profilePhoto = "";
 let activePhotoSlot = "";
 let activePhotoStream = null;
 let activeFoodScanStream = null;
-let activeRegisterPanelId = null;
 let pendingMealSlot = null;
 const periodLabels = ["\u00daltimos 3 ciclos", "\u00daltimos 6 ciclos", "Ciclo atual"];
 const seriesLabels = {
@@ -1930,68 +1929,15 @@ function renderFoodScanLoading() {
   body.innerHTML = `<p class="diet-guide-intro">Analisando a foto...</p>`;
 }
 
-function renderFoodScanResult(result) {
-  const body = settingsPanelContent.querySelector("[data-food-scan-body]");
-  if (!body) {
-    return;
-  }
-
-  if (!result || result.ok === false) {
-    body.innerHTML = `
-      <p class="diet-guide-intro">${result?.error || "Não foi possível analisar a foto agora. Tente novamente."}</p>
-      <button class="panel-button" type="button" data-panel-action="open-food-scan-camera">Tentar de novo</button>
-    `;
-    return;
-  }
-
-  if (!result.items.length) {
-    body.innerHTML = `
-      <p class="diet-guide-intro">Não conseguimos identificar alimentos nessa foto com confiança. Tente uma foto mais próxima e bem iluminada.</p>
-      <button class="panel-button" type="button" data-panel-action="open-food-scan-camera">Tirar outra foto</button>
-    `;
-    return;
-  }
-
-  const itemsHtml = result.items.map((item) => renderFoodScanItemHtml(item)).join("");
-
-  body.innerHTML = `
-    <p class="diet-guide-intro">Estimativa da IA a partir da foto — não é uma pesagem exata.</p>
-    <p class="food-scan-total"><strong>${result.totalCalories}</strong> kcal estimadas no total</p>
-    <div class="insight-list">${itemsHtml}</div>
-    <button class="panel-button secondary" type="button" data-panel-action="open-food-scan-camera">Escanear outro prato</button>
-  `;
-}
-
-function renderFoodScanItemHtml(item) {
-  const color = item.match ? (item.match.category === "good" ? "teal" : "pink") : "orange";
-  const verdict = item.match
-    ? item.match.category === "good"
-      ? `Está na lista de alimentos anti-inflamatórios: <strong>${item.match.name}</strong>.`
-      : `Está na lista de alimentos a evitar: <strong>${item.match.name}</strong>.`
-    : "Sem correspondência direta na nossa lista — classificação apenas da estimativa da IA.";
-  const calories = item.estimatedCalories !== null ? `~${item.estimatedCalories} kcal` : "calorias não estimadas";
-  return `
-    <article>
-      <span class="round-icon ${color}"></span>
-      <p><strong>${item.name}</strong>${item.portion ? ` (${item.portion})` : ""} — ${calories}. ${verdict}</p>
-    </article>
-  `;
-}
-
 async function submitFoodScan(imageDataUrl) {
   renderFoodScanLoading();
   const mealSlot = pendingMealSlot || inferMealSlot();
   pendingMealSlot = null;
   const result = await apiRequest("/api/food-scan", { method: "POST", body: { imageDataUrl, mealSlot } });
 
-  if (activeRegisterPanelId === "nutrition-dashboard") {
-    await loadServerState();
-    openRegisterPanel("nutrition-dashboard");
-    showToast(result?.ok === false ? result.error || "Não foi possível analisar a foto agora." : "Prato adicionado");
-    return;
-  }
-
-  renderFoodScanResult(result);
+  await loadServerState();
+  openRegisterPanel("nutrition-dashboard");
+  showToast(result?.ok === false ? result.error || "Não foi possível analisar a foto agora." : "Prato adicionado");
 }
 
 function getComparisonTone(value, higherIsBetter = false) {
@@ -3258,58 +3204,6 @@ const registerPanels = {
     render() {
       const data = buildNutritionDashboard();
 
-      if (!data.goal) {
-        const sex = currentProfile?.sex || "";
-        const activityLevel = currentProfile?.activityLevel || "";
-        const birthdate = currentProfile?.birthdate ? String(currentProfile.birthdate).slice(0, 10) : "";
-        const heightCm = currentProfile?.heightCm || "";
-        const weightKg = getLatestWeightKg() || "";
-        const today = new Date().toISOString().slice(0, 10);
-        const sexOptionsHtml = sexOptions.map(([value, label]) => `<option value="${value}"${value === sex ? " selected" : ""}>${label}</option>`).join("");
-        const activityOptionsHtml = activityLevelOptions
-          .map(([value, label]) => `<option value="${value}"${value === activityLevel ? " selected" : ""}>${label}</option>`)
-          .join("");
-
-        return `
-          <div class="smart-register-panel nutrition-dashboard-panel">
-            <img src="imagem/imagem/scanner de alimentos-intro.png" alt="" class="food-scanner-mascot">
-            <p class="diet-guide-intro">Preencha os dados abaixo para calcular sua meta cal&oacute;rica e de macros individualizada.</p>
-            <form class="settings-form" data-panel-form="nutrition-onboarding">
-              <label class="settings-field">Altura <small>(cm)</small>
-                <input name="heightCm" type="number" min="100" max="230" inputmode="numeric" value="${heightCm}" placeholder="Ex.: 165">
-              </label>
-              <label class="settings-field">Data de nascimento
-                <input type="date" name="birthdate" value="${birthdate}" max="${today}">
-              </label>
-              <label class="settings-field">Sexo biol&oacute;gico
-                <select name="sex"><option value="">Selecione</option>${sexOptionsHtml}</select>
-              </label>
-              <label class="settings-field">N&iacute;vel de atividade f&iacute;sica
-                <select name="activityLevel"><option value="">Selecione</option>${activityOptionsHtml}</select>
-              </label>
-              <label class="settings-field">Peso atual <small>(kg)</small>
-                <input name="weightKg" type="number" min="30" max="300" step="0.1" inputmode="decimal" value="${weightKg}" placeholder="Ex.: 68">
-              </label>
-              <button class="panel-button" type="submit">Calcular minha meta</button>
-            </form>
-            <button class="panel-button secondary" type="button" data-open-register-panel="food-scanner">Escanear um prato mesmo assim</button>
-            <button class="panel-button secondary" type="button" data-open-register-panel="diet-plan">Plano alimentar de 21 dias</button>
-            <button class="text-button diet-guide-link" type="button" data-open-register-panel="diet-guide">O que &eacute; alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria? Ver orienta&ccedil;&otilde;es</button>
-          </div>
-        `;
-      }
-
-      const percent = Math.max(0, Math.min(100, Math.round((data.consumedCalories / data.goal.calorieGoal) * 100)));
-
-      const macroRow = (label, consumed, goal, color) => {
-        const value = goal ? Math.max(0, Math.min(100, Math.round((consumed / goal) * 100))) : 0;
-        return `
-          <div class="metric-row" style="--value: ${value}%; --color: ${color}">
-            <span>${label}</span><span>${consumed} / ${goal} g</span><i></i>
-          </div>
-        `;
-      };
-
       const mealsHtml = data.meals
         .map((meal) => {
           const itemNames = meal.entries.flatMap((entry) => entry.items.map((item) => item.name));
@@ -3328,6 +3222,74 @@ const registerPanels = {
           `;
         })
         .join("");
+
+      const scanBody = `
+        <div data-food-scan-body>
+          <input type="file" accept="image/*" capture="environment" data-food-scan-input hidden>
+        </div>
+      `;
+
+      const footerLinks = `
+        <button class="panel-button secondary" type="button" data-open-register-panel="diet-plan">Plano alimentar de 21 dias</button>
+        <button class="text-button diet-guide-link" type="button" data-open-register-panel="diet-guide">O que &eacute; alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria? Ver orienta&ccedil;&otilde;es</button>
+      `;
+
+      if (!data.goal) {
+        const sex = currentProfile?.sex || "";
+        const activityLevel = currentProfile?.activityLevel || "";
+        const birthdate = currentProfile?.birthdate ? String(currentProfile.birthdate).slice(0, 10) : "";
+        const heightCm = currentProfile?.heightCm || "";
+        const weightKg = getLatestWeightKg() || "";
+        const today = new Date().toISOString().slice(0, 10);
+        const sexOptionsHtml = sexOptions.map(([value, label]) => `<option value="${value}"${value === sex ? " selected" : ""}>${label}</option>`).join("");
+        const activityOptionsHtml = activityLevelOptions
+          .map(([value, label]) => `<option value="${value}"${value === activityLevel ? " selected" : ""}>${label}</option>`)
+          .join("");
+
+        return `
+          <div class="smart-register-panel nutrition-dashboard-panel">
+            <div class="nutrition-onboarding-header">
+              <img src="imagem/imagem/scanner de alimentos-intro.png" alt="" class="food-scanner-mascot">
+              <p class="diet-guide-intro">Preencha os dados abaixo para calcular sua meta cal&oacute;rica e de macros individualizada.</p>
+            </div>
+            <form class="settings-form" data-panel-form="nutrition-onboarding">
+              <label class="settings-field">Altura <small>(cm)</small>
+                <input name="heightCm" type="number" min="100" max="230" inputmode="numeric" value="${heightCm}" placeholder="Ex.: 165">
+              </label>
+              <label class="settings-field">Data de nascimento
+                <input type="date" name="birthdate" value="${birthdate}" max="${today}">
+              </label>
+              <label class="settings-field">Sexo biol&oacute;gico
+                <select name="sex"><option value="">Selecione</option>${sexOptionsHtml}</select>
+              </label>
+              <label class="settings-field">N&iacute;vel de atividade f&iacute;sica
+                <select name="activityLevel"><option value="">Selecione</option>${activityOptionsHtml}</select>
+              </label>
+              <label class="settings-field">Peso atual <small>(kg)</small>
+                <input name="weightKg" type="number" min="30" max="300" step="0.1" inputmode="decimal" value="${weightKg}" placeholder="Ex.: 68">
+              </label>
+              <button class="panel-button" type="submit">Calcular minha meta</button>
+            </form>
+
+            <p class="section-label">Alimenta&ccedil;&atilde;o de hoje</p>
+            ${mealsHtml}
+            ${scanBody}
+
+            ${footerLinks}
+          </div>
+        `;
+      }
+
+      const percent = Math.max(0, Math.min(100, Math.round((data.consumedCalories / data.goal.calorieGoal) * 100)));
+
+      const macroRow = (label, consumed, goal, color) => {
+        const value = goal ? Math.max(0, Math.min(100, Math.round((consumed / goal) * 100))) : 0;
+        return `
+          <div class="metric-row" style="--value: ${value}%; --color: ${color}">
+            <span>${label}</span><span>${consumed} / ${goal} g</span><i></i>
+          </div>
+        `;
+      };
 
       return `
         <div class="smart-register-panel nutrition-dashboard-panel">
@@ -3360,15 +3322,10 @@ const registerPanels = {
 
           <p class="section-label">Alimenta&ccedil;&atilde;o de hoje</p>
           ${mealsHtml}
-
-          <div data-food-scan-body>
-            <button class="panel-button" type="button" data-panel-action="open-food-scan-camera">Escanear novo prato</button>
-            <input type="file" accept="image/*" capture="environment" data-food-scan-input hidden>
-          </div>
+          ${scanBody}
 
           <p class="diet-guide-note">Estimativa da IA a partir das fotos escaneadas &mdash; n&atilde;o &eacute; uma pesagem exata. Meta calculada com a f&oacute;rmula de Mifflin-St Jeor a partir do seu perfil.</p>
-          <button class="panel-button secondary" type="button" data-open-register-panel="diet-plan">Plano alimentar de 21 dias</button>
-          <button class="text-button diet-guide-link" type="button" data-open-register-panel="diet-guide">O que &eacute; alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria? Ver orienta&ccedil;&otilde;es</button>
+          ${footerLinks}
         </div>
       `;
     },
@@ -3409,21 +3366,6 @@ const registerPanels = {
           <p class="diet-guide-intro">Sugest&atilde;o geral da IA, priorizando os alimentos do guia anti-inflamat&oacute;rio &mdash; ajuste com um nutricionista que conhe&ccedil;a lipedema.</p>
           <div class="diet-plan-days">${daysHtml}</div>
           <button class="panel-button secondary" type="button" data-panel-action="generate-diet-plan">Gerar novo plano</button>
-        </div>
-      `;
-    },
-  },
-  "food-scanner": {
-    title: "Scanner de alimentos",
-    render() {
-      return `
-        <div class="smart-register-panel food-scanner-panel">
-          <img src="imagem/imagem/scanner de alimentos-intro.png" alt="" class="food-scanner-mascot">
-          <p class="diet-guide-intro">Tire uma foto do seu prato. Uma IA identifica os alimentos e estima as calorias, e o app cruza cada um com a lista real de alimentos anti-inflamatórios do guia de dieta &mdash; sem achismo escondido.</p>
-          <div data-food-scan-body>
-            <button class="panel-button" type="button" data-panel-action="open-food-scan-camera">Tirar foto do prato</button>
-            <input type="file" accept="image/*" capture="environment" data-food-scan-input hidden>
-          </div>
         </div>
       `;
     },
@@ -3672,7 +3614,6 @@ function openRegisterPanel(panelId) {
     return;
   }
 
-  activeRegisterPanelId = panelId;
   settingsPanelTitle.innerHTML = panel.title;
   settingsPanelContent.innerHTML = panel.render();
   settingsSheet.classList.add("open");

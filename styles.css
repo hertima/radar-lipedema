@@ -727,19 +727,6 @@ h2 {
   color: var(--purple-deep);
 }
 
-.food-scanner-panel {
-  text-align: center;
-  gap: 4px;
-}
-
-.food-scanner-panel .panel-button {
-  width: 100%;
-}
-
-.food-scanner-panel[data-has-result] {
-  text-align: left;
-}
-
 .cycle-ring {
   width: 74px;
   height: 74px;
@@ -752,6 +739,10 @@ h2 {
 
 .nutrition-dashboard-panel {
   gap: 14px;
+}
+
+.nutrition-onboarding-header {
+  text-align: center;
 }
 
 .nutrition-ring-wrap {
