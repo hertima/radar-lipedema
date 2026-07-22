@@ -3092,7 +3092,7 @@ const registerPanels = {
     render() {
       return `
         <div class="smart-register-panel food-scanner-panel">
-          <img src="imagem/imagem/scanner de alimentos.png" alt="" class="food-scanner-mascot">
+          <img src="imagem/imagem/scanner de alimentos-intro.png" alt="" class="food-scanner-mascot">
           <p class="diet-guide-intro">Tire uma foto do seu prato. Uma IA identifica os alimentos e estima as calorias, e o app cruza cada um com a lista real de alimentos anti-inflamatórios do guia de dieta &mdash; sem achismo escondido.</p>
           <div data-food-scan-body>
             <button class="panel-button" type="button" data-panel-action="open-food-scan-camera">Tirar foto do prato</button>
