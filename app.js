@@ -3474,7 +3474,7 @@ const stepperValues = {
 
 function setActiveButton(buttons, screenId) {
   buttons.forEach((button) => {
-    const isActive = button.dataset.target === screenId;
+    const isActive = button.dataset.target === screenId || button.dataset.registerPanel === screenId;
     button.classList.toggle("active", isActive);
     if (isActive) {
       button.setAttribute("aria-current", "page");
@@ -3607,6 +3607,10 @@ function openRegisterPanel(panelId) {
     return;
   }
 
+  if (bottomButtons.some((button) => button.dataset.registerPanel === panelId)) {
+    setActiveButton(bottomButtons, panelId);
+  }
+
   settingsPanelTitle.innerHTML = panel.title;
   settingsPanelContent.innerHTML = panel.render();
   settingsSheet.classList.add("open");
@@ -3618,6 +3622,10 @@ function closeSettingsPanel() {
   closeFoodScanCamera();
   settingsSheet.classList.remove("open");
   settingsSheet.setAttribute("aria-hidden", "true");
+  const activeScreen = screens.find((screen) => screen.classList.contains("active"));
+  if (activeScreen) {
+    setActiveButton(bottomButtons, activeScreen.id);
+  }
 }
 
 navButtons.forEach((button) => {
