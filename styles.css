@@ -824,6 +824,84 @@ h2 {
   gap: 8px;
 }
 
+.nutrition-meal-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.nutrition-meal-row:last-child {
+  border-bottom: 0;
+}
+
+.nutrition-meal-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--teal);
+  border-radius: 50%;
+}
+
+.nutrition-meal-icon .round-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.nutrition-meal-info {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+}
+
+.nutrition-meal-info strong {
+  font-size: 14px;
+}
+
+.nutrition-meal-kcal {
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--muted);
+}
+
+.nutrition-meal-desc {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ia-badge {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--purple);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.nutrition-meal-add {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+}
+
 .plan-building-panel {
   display: grid;
   justify-items: center;

@@ -15,6 +15,7 @@ let activePhotoSlot = "";
 let activePhotoStream = null;
 let activeFoodScanStream = null;
 let activeRegisterPanelId = null;
+let pendingMealSlot = null;
 const periodLabels = ["\u00daltimos 3 ciclos", "\u00daltimos 6 ciclos", "Ciclo atual"];
 const seriesLabels = {
   dor: "Dor",
@@ -1182,6 +1183,7 @@ const mealSlotLabels = {
   dinner: "Jantar",
 };
 const mealSlotOrder = ["breakfast", "lunch", "snack", "dinner"];
+const mealSlotCalorieShare = { breakfast: 0.25, lunch: 0.35, snack: 0.15, dinner: 0.25 };
 
 function inferMealSlot(date = new Date()) {
   const hour = date.getHours();
@@ -1273,14 +1275,25 @@ function buildNutritionDashboard() {
   const caloriesBurned = computeCaloriesBurnedFromSteps(steps, weightKg);
   const remaining = goal ? goal.calorieGoal - consumedCalories + caloriesBurned : null;
 
-  const meals = mealSlotOrder.map((slot) => ({
-    slot,
-    label: mealSlotLabels[slot],
-    entries: todayScans.filter((entry) => entry.mealSlot === slot),
-  }));
+  const meals = mealSlotOrder.map((slot) => {
+    const entries = todayScans.filter((entry) => entry.mealSlot === slot);
+    return {
+      slot,
+      label: mealSlotLabels[slot],
+      entries,
+      consumedCalories: entries.reduce((total, entry) => total + entry.totalCalories, 0),
+      goalCalories: goal ? Math.round(goal.calorieGoal * mealSlotCalorieShare[slot]) : null,
+    };
+  });
   const otherEntries = todayScans.filter((entry) => !mealSlotOrder.includes(entry.mealSlot));
   if (otherEntries.length) {
-    meals.push({ slot: "other", label: "Outros horários", entries: otherEntries });
+    meals.push({
+      slot: "other",
+      label: "Outros horários",
+      entries: otherEntries,
+      consumedCalories: otherEntries.reduce((total, entry) => total + entry.totalCalories, 0),
+      goalCalories: null,
+    });
   }
 
   return {
@@ -1967,7 +1980,8 @@ function renderFoodScanItemHtml(item) {
 
 async function submitFoodScan(imageDataUrl) {
   renderFoodScanLoading();
-  const mealSlot = inferMealSlot();
+  const mealSlot = pendingMealSlot || inferMealSlot();
+  pendingMealSlot = null;
   const result = await apiRequest("/api/food-scan", { method: "POST", body: { imageDataUrl, mealSlot } });
 
   if (activeRegisterPanelId === "nutrition-dashboard") {
@@ -3296,21 +3310,24 @@ const registerPanels = {
         `;
       };
 
-      const mealsWithFood = data.meals.filter((meal) => meal.entries.length);
-      const mealsHtml = mealsWithFood.length
-        ? mealsWithFood
-            .map(
-              (meal) => `
-                <div class="nutrition-meal-group">
-                  <p class="section-label">${meal.label}</p>
-                  <div class="insight-list">
-                    ${meal.entries.map((entry) => entry.items.map((item) => renderFoodScanItemHtml(item)).join("")).join("")}
-                  </div>
-                </div>
-              `
-            )
-            .join("")
-        : `<p class="diet-guide-note">Nenhum prato escaneado hoje ainda.</p>`;
+      const mealsHtml = data.meals
+        .map((meal) => {
+          const itemNames = meal.entries.flatMap((entry) => entry.items.map((item) => item.name));
+          const description = itemNames.length ? itemNames.join(", ") : "Nenhum alimento registrado ainda";
+          const kcalLabel = meal.goalCalories !== null ? `${meal.consumedCalories} / ${meal.goalCalories} kcal` : `${meal.consumedCalories} kcal`;
+          return `
+            <div class="nutrition-meal-row">
+              <span class="nutrition-meal-icon"><span class="round-icon teal"></span></span>
+              <div class="nutrition-meal-info">
+                <strong>${meal.label}</strong>
+                <span class="nutrition-meal-kcal">${kcalLabel}</span>
+                <span class="nutrition-meal-desc">${itemNames.length ? '<span class="ia-badge">IA</span> ' : ""}${description}</span>
+              </div>
+              <button class="nutrition-meal-add" type="button" data-panel-action="open-food-scan-camera" data-meal-slot="${meal.slot}" aria-label="Adicionar em ${meal.label}">+</button>
+            </div>
+          `;
+        })
+        .join("");
 
       return `
         <div class="smart-register-panel nutrition-dashboard-panel">
@@ -4343,6 +4360,7 @@ settingsPanelContent.addEventListener("click", (event) => {
   }
 
   if (actionName === "open-food-scan-camera") {
+    pendingMealSlot = action.dataset.mealSlot || null;
     openFoodScanCamera();
     return;
   }
