@@ -32,9 +32,9 @@ const symptomImageSources = [
 const normalImageSource = "imagem/normal-card.png";
 const fallbackImageSource = "imagem/sensibilidade-card.png";
 const photoSlotTemplates = [
-  { name: "Frente", className: "front-view", placeholder: "imagem/radar-frente-card.png" },
-  { name: "Lado", className: "side-view", placeholder: "imagem/radar-frente-card.png" },
-  { name: "Costas", className: "back-view", placeholder: "imagem/radar-costas-card.png" },
+  { name: "Frente", className: "front-view", placeholder: "imagem/imagem/referencia-frente.png" },
+  { name: "Lado", className: "side-view", placeholder: "imagem/imagem/referencia-lado.png" },
+  { name: "Costas", className: "back-view", placeholder: "imagem/imagem/referencia-costas.png" },
 ];
 const photoSlotImages = {};
 const insightIconMap = { pink: "i-heart", purple: "i-drop", orange: "i-sun", teal: "i-trend" };

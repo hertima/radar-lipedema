@@ -1975,14 +1975,6 @@ input[type="range"] {
   object-fit: cover;
 }
 
-.side-view img {
-  transform: scaleX(.78) scale(1.08);
-}
-
-.photo-thumb.has-photo img {
-  transform: none;
-}
-
 .photo-capture-inputs,
 .photo-capture-input {
   position: absolute;
