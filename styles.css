@@ -705,10 +705,10 @@ h2 {
 
 .food-scanner-mascot {
   display: block;
-  width: 96px;
-  height: 96px;
+  width: 140px;
+  height: 140px;
   object-fit: contain;
-  margin: 0 auto 8px;
+  margin: 8px auto 4px;
 }
 
 .food-scan-total {
@@ -718,16 +718,10 @@ h2 {
 }
 
 .food-scanner-panel {
-  min-height: calc(100vh - 260px);
-  align-content: center;
-  justify-items: center;
   text-align: center;
 }
 
 .food-scanner-panel[data-has-result] {
-  min-height: 0;
-  align-content: start;
-  justify-items: stretch;
   text-align: left;
 }
 
