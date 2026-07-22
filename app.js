@@ -995,24 +995,16 @@ function renderDeepInsights(history) {
     .join("");
 }
 
-function renderActionPlan(profile, history) {
-  const container = document.querySelector("[data-action-plan]");
-  if (!container) {
-    return;
-  }
-
+function buildActionPlanHtml(profile, history) {
   const info = computeCycleInfo(profile);
   if (!info) {
-    container.innerHTML = `
-      <p class="diet-guide-intro">Informe a data do seu último ciclo em Ajustes &gt; Preferências do ciclo para receber um plano ajustado à sua fase.</p>
-    `;
-    return;
+    return `<p class="diet-guide-intro">Informe a data do seu último ciclo em Ajustes &gt; Preferências do ciclo para receber um plano ajustado à sua fase.</p>`;
   }
 
   const plan = actionPlanByPhase[info.phase];
   const worst = computeInsights(history).find((insight) => insight.text.includes("maior média"));
 
-  container.innerHTML = `
+  return `
     <p class="diet-guide-intro">Fase ${info.phase} — Dia ${info.cycleDay} de ${info.cycleLength}${
       worst ? `. Seu sintoma de maior atenção agora: <strong>${worst.label}</strong>.` : ""
     }</p>
@@ -1374,7 +1366,6 @@ function renderDynamicData() {
   renderSymptomTable(history);
   renderDeepInsights(history);
   renderInsightsHero(history);
-  renderActionPlan(currentProfile, history);
   renderRecentTrendCards(history);
   renderGamification(history);
   renderCycleCard(currentProfile);
@@ -3236,7 +3227,7 @@ const registerPanels = {
     },
   },
   "nutrition-dashboard": {
-    title: "Hoje",
+    title: "Dieta anti-inflamat&oacute;ria",
     render() {
       const data = buildNutritionDashboard();
 
@@ -3297,6 +3288,9 @@ const registerPanels = {
           ${macroRow("Carboidratos", data.consumedCarbs, data.goal.carbsG, "var(--purple)")}
           ${macroRow("Prote&iacute;na", data.consumedProtein, data.goal.proteinG, "var(--pink)")}
           ${macroRow("Gordura", data.consumedFat, data.goal.fatG, "var(--orange)")}
+
+          <p class="section-label">Plano de a&ccedil;&atilde;o de hoje</p>
+          ${buildActionPlanHtml(currentProfile, getDailyRegisters())}
 
           <div class="nutrition-steps-row">
             <label class="settings-field">Passos de hoje <small>(usados para estimar calorias gastas)</small>
