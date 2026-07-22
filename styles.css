@@ -391,6 +391,16 @@ h2 {
   text-align: center;
 }
 
+.center-header:has(.screen-header-actions) {
+  grid-template-columns: 44px 1fr auto;
+}
+
+.screen-header-actions {
+  display: flex;
+  gap: 6px;
+  justify-self: end;
+}
+
 .profile-line {
   display: flex;
   align-items: center;
@@ -3690,6 +3700,10 @@ input[type="range"] {
 .tab-panel.active.cycle-timeline,
 .tab-panel.active.symptom-table {
   display: grid;
+}
+
+.tab-panel.active.insights-hero {
+  display: flex;
 }
 
 .toast {

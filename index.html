@@ -248,7 +248,7 @@
               <svg class="icon food-scanner-card-camera"><use href="#i-camera"></use></svg>
             </section>
 
-            <article class="insight-card" data-target="insights" role="button" tabindex="0">
+            <article class="insight-card" data-target="history" role="button" tabindex="0">
               <span class="insight-icon">
                 <svg class="icon"><use href="#i-star"></use></svg>
               </span>
@@ -405,9 +405,14 @@
             <header class="screen-header center-header">
               <span></span>
               <h2 id="history-title">Hist&oacute;rico</h2>
-              <button class="icon-button" type="button" aria-label="Calendario" data-history-tab="cycle-history">
-                <svg class="icon"><use href="#i-calendar"></use></svg>
-              </button>
+              <div class="screen-header-actions">
+                <button class="icon-button" type="button" data-premium-action="pdf-report" aria-label="Relatorio">
+                  <svg class="icon"><use href="#i-file"></use></svg>
+                </button>
+                <button class="icon-button" type="button" aria-label="Calendario" data-history-tab="cycle-history">
+                  <svg class="icon"><use href="#i-calendar"></use></svg>
+                </button>
+              </div>
             </header>
 
             <div class="tabs" role="tablist" aria-label="Historico" data-tab-group="history">
@@ -480,6 +485,42 @@
               </article>
             </section>
 
+            <section class="card action-plan-card tab-panel active" data-panel="patterns" aria-label="Plano de acao personalizado">
+              <div class="card-title-row">
+                <p class="section-label">Plano de a&ccedil;&atilde;o de hoje</p>
+                <span>real</span>
+              </div>
+              <div data-action-plan>
+                <p class="diet-guide-intro">Informe a data do seu &uacute;ltimo ciclo em Ajustes &gt; Prefer&ecirc;ncias do ciclo para receber um plano ajustado &agrave; sua fase.</p>
+              </div>
+            </section>
+
+            <section class="card forecast-card tab-panel active" data-panel="patterns" aria-label="Ultimos registros">
+              <div class="card-title-row">
+                <p class="section-label">&Uacute;ltimos registros</p>
+                <span>real</span>
+              </div>
+              <div class="forecast-grid">
+                <article><strong>Sem registros</strong><span>Registre seus sintomas</span><i class="risk"></i></article>
+              </div>
+            </section>
+
+            <section class="card report-card tab-panel active" data-panel="patterns" aria-label="Recursos premium">
+              <p class="section-label">Recursos Premium</p>
+              <button type="button" data-premium-action="cycle-comparison">
+                <svg class="icon"><use href="#i-chart"></use></svg>
+                <span>Comparativos entre ciclos<small data-premium-summary="cycle-comparison">3 ciclos analisados</small></span>
+              </button>
+              <button type="button" data-premium-action="pdf-report">
+                <svg class="icon"><use href="#i-file"></use></svg>
+                <span>Relat&oacute;rios detalhados em PDF<small data-premium-summary="pdf-report">Score, gr&aacute;ficos e fotos</small></span>
+              </button>
+              <button type="button" data-premium-action="data-export">
+                <svg class="icon"><use href="#i-crown"></use></svg>
+                <span>Exporta&ccedil;&atilde;o de dados<small data-premium-summary="data-export">CSV + JSON prontos</small></span>
+              </button>
+            </section>
+
             <section class="card cycle-timeline tab-panel" data-panel="cycle-history" aria-label="Historico do ciclo">
               <p class="section-label">Linha do ciclo</p>
               <div class="cycle-days" data-cycle-days></div>
@@ -495,52 +536,6 @@
               <div><span>Edema</span><strong>5.0</strong><i style="--value: 50%; --color: #8b5cf6"></i></div>
               <div><span>Sensibilidade</span><strong>7.0</strong><i style="--value: 70%; --color: #f59e2e"></i></div>
               <div><span>Humor</span><strong>4.0</strong><i style="--value: 40%; --color: #13b8b0"></i></div>
-            </section>
-          </section>
-
-          <section class="screen" id="insights" aria-labelledby="insights-title">
-            <header class="screen-header center-header">
-              <span></span>
-              <h2 id="insights-title">Insights</h2>
-              <button class="icon-button" type="button" data-premium-action="pdf-report" aria-label="Relatorio">
-                <svg class="icon"><use href="#i-file"></use></svg>
-              </button>
-            </header>
-
-            <section class="card action-plan-card" aria-label="Plano de acao personalizado">
-              <div class="card-title-row">
-                <p class="section-label">Plano de a&ccedil;&atilde;o de hoje</p>
-                <span>real</span>
-              </div>
-              <div data-action-plan>
-                <p class="diet-guide-intro">Informe a data do seu &uacute;ltimo ciclo em Ajustes &gt; Prefer&ecirc;ncias do ciclo para receber um plano ajustado &agrave; sua fase.</p>
-              </div>
-            </section>
-
-            <section class="card forecast-card" aria-label="Ultimos registros">
-              <div class="card-title-row">
-                <p class="section-label">&Uacute;ltimos registros</p>
-                <span>real</span>
-              </div>
-              <div class="forecast-grid">
-                <article><strong>Sem registros</strong><span>Registre seus sintomas</span><i class="risk"></i></article>
-              </div>
-            </section>
-
-            <section class="card report-card" aria-label="Recursos premium">
-              <p class="section-label">Recursos Premium</p>
-              <button type="button" data-premium-action="cycle-comparison">
-                <svg class="icon"><use href="#i-chart"></use></svg>
-                <span>Comparativos entre ciclos<small data-premium-summary="cycle-comparison">3 ciclos analisados</small></span>
-              </button>
-              <button type="button" data-premium-action="pdf-report">
-                <svg class="icon"><use href="#i-file"></use></svg>
-                <span>Relat&oacute;rios detalhados em PDF<small data-premium-summary="pdf-report">Score, gr&aacute;ficos e fotos</small></span>
-              </button>
-              <button type="button" data-premium-action="data-export">
-                <svg class="icon"><use href="#i-crown"></use></svg>
-                <span>Exporta&ccedil;&atilde;o de dados<small data-premium-summary="data-export">CSV + JSON prontos</small></span>
-              </button>
             </section>
           </section>
 
