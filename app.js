@@ -3230,7 +3230,7 @@ const registerPanels = {
           </article>
 
           <p class="diet-guide-note">Isso &eacute; orienta&ccedil;&atilde;o geral, n&atilde;o um plano individual. Sensibilidades a l&aacute;cteos ou gl&uacute;ten variam de pessoa pra pessoa &mdash; o ideal &eacute; ajustar com um nutricionista que conhe&ccedil;a lipedema.</p>
-          <button class="panel-button secondary" type="button" data-open-register-panel="habits">Voltar</button>
+          <button class="panel-button secondary" type="button" data-close-settings>Voltar</button>
         </div>
       `;
     },
@@ -3247,6 +3247,7 @@ const registerPanels = {
             <p class="diet-guide-intro">Informe idade, sexo e n&iacute;vel de atividade em Ajustes &gt; Perfil, e registre seu peso em Registrar &gt; Peso, para calcular sua meta cal&oacute;rica individualizada.</p>
             <button class="panel-button" type="button" data-settings-panel="profile">Completar perfil</button>
             <button class="panel-button secondary" type="button" data-open-register-panel="food-scanner">Escanear um prato mesmo assim</button>
+            <button class="text-button diet-guide-link" type="button" data-open-register-panel="diet-guide">O que &eacute; alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria? Ver orienta&ccedil;&otilde;es</button>
           </div>
         `;
       }
@@ -3313,6 +3314,7 @@ const registerPanels = {
           </div>
 
           <p class="diet-guide-note">Estimativa da IA a partir das fotos escaneadas &mdash; n&atilde;o &eacute; uma pesagem exata. Meta calculada com a f&oacute;rmula de Mifflin-St Jeor a partir do seu perfil.</p>
+          <button class="text-button diet-guide-link" type="button" data-open-register-panel="diet-guide">O que &eacute; alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria? Ver orienta&ccedil;&otilde;es</button>
         </div>
       `;
     },
@@ -4003,6 +4005,12 @@ settingsPanelContent.addEventListener("submit", (event) => {
 });
 
 settingsPanelContent.addEventListener("click", (event) => {
+  const nestedCloseTrigger = event.target.closest("[data-close-settings]");
+  if (nestedCloseTrigger) {
+    closeSettingsPanel();
+    return;
+  }
+
   const nestedPanelTrigger = event.target.closest("[data-settings-panel]");
   if (nestedPanelTrigger) {
     openSettingsPanel(nestedPanelTrigger.dataset.settingsPanel);
