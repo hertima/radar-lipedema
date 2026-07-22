@@ -652,11 +652,26 @@ app.get("/api/bootstrap", requireAuth, asyncRoute(async (request, response) => {
       [request.userId]
     ),
     pool.query(
-      `select id, record_type as "recordType", payload, created_at as "createdAt"
-         from records
-        where profile_id = $1
-        order by created_at desc
-        limit 200`,
+      `select * from (
+         (select id, record_type as "recordType", payload, created_at as "createdAt"
+            from records
+           where profile_id = $1
+           order by created_at desc
+           limit 200)
+         union
+         (select id, record_type as "recordType", payload, created_at as "createdAt"
+            from records
+           where profile_id = $1 and record_type = 'save-weight'
+           order by created_at desc
+           limit 1)
+         union
+         (select id, record_type as "recordType", payload, created_at as "createdAt"
+            from records
+           where profile_id = $1 and record_type = 'diet-plan'
+           order by created_at desc
+           limit 1)
+       ) combined
+       order by "createdAt" desc`,
       [request.userId]
     ),
     latestPhotos(request.userId),

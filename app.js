@@ -1177,14 +1177,6 @@ const activityLevelOptions = [
   ["active", "Ativo (exercício intenso 6-7x/semana)"],
   ["very_active", "Muito ativo (exercício intenso diário ou físico)"],
 ];
-const dietMacroRatios = { carbs: 0.45, protein: 0.25, fat: 0.30 };
-const activityMultipliers = {
-  sedentary: 1.2,
-  light: 1.375,
-  moderate: 1.55,
-  active: 1.725,
-  very_active: 1.9,
-};
 const mealSlotLabels = {
   breakfast: "Café da manhã",
   lunch: "Almoço",
@@ -1192,16 +1184,6 @@ const mealSlotLabels = {
   dinner: "Jantar",
 };
 const mealSlotOrder = ["breakfast", "lunch", "snack", "dinner"];
-const mealSlotCalorieShare = { breakfast: 0.25, lunch: 0.35, snack: 0.15, dinner: 0.25 };
-
-function inferMealSlot(date = new Date()) {
-  const hour = date.getHours();
-  if (hour >= 5 && hour < 11) return "breakfast";
-  if (hour >= 11 && hour < 15) return "lunch";
-  if (hour >= 15 && hour < 18) return "snack";
-  if (hour >= 18 && hour < 23) return "dinner";
-  return "snack";
-}
 
 function getDietPlanRecord() {
   return recordHistory.find((record) => record.recordType === "diet-plan" && Array.isArray(record.payload?.days));
@@ -1219,29 +1201,6 @@ function getDietPlanDayIndex(generatedAt) {
 function getLatestWeightKg() {
   const record = recordHistory.find((entry) => entry.recordType === "save-weight" && typeof entry.payload?.weight === "number");
   return record ? Number(record.payload.weight) : null;
-}
-
-function computeCalorieGoal(profile, weightKg) {
-  if (!profile?.birthdate || !profile?.sex || !profile?.activityLevel || !profile?.heightCm || !weightKg) {
-    return null;
-  }
-
-  const birth = new Date(`${String(profile.birthdate).slice(0, 10)}T00:00:00`);
-  const ageMs = Date.now() - birth.getTime();
-  const age = Math.floor(ageMs / (365.25 * 86_400_000));
-  const heightCm = Number(profile.heightCm);
-
-  const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + (profile.sex === "male" ? 5 : -161);
-  const multiplier = activityMultipliers[profile.activityLevel] || activityMultipliers.sedentary;
-  const calorieGoal = Math.round(bmr * multiplier);
-
-  return {
-    age,
-    calorieGoal,
-    carbsG: Math.round((calorieGoal * dietMacroRatios.carbs) / 4),
-    proteinG: Math.round((calorieGoal * dietMacroRatios.protein) / 4),
-    fatG: Math.round((calorieGoal * dietMacroRatios.fat) / 9),
-  };
 }
 
 function buildNutritionDashboard() {
@@ -3300,6 +3259,7 @@ const registerPanels = {
             <div><strong>${data.consumedCalories}</strong><span>Consumidas</span></div>
             <div><strong>${data.goal.calorieGoal}</strong><span>Meta</span></div>
           </div>
+          <p class="nutrition-estimate-note">Estimativa por IA a partir das fotos &mdash; n&atilde;o &eacute; uma pesagem exata.</p>
 
           ${macroRow("Carboidratos", data.consumedCarbs, data.goal.carbsG, "var(--purple)")}
           ${macroRow("Prote&iacute;na", data.consumedProtein, data.goal.proteinG, "var(--pink)")}
@@ -3312,7 +3272,7 @@ const registerPanels = {
           ${mealsHtml}
           ${scanBody}
 
-          <p class="diet-guide-note">Estimativa da IA a partir das fotos escaneadas &mdash; n&atilde;o &eacute; uma pesagem exata. Meta calculada com a f&oacute;rmula de Mifflin-St Jeor a partir do seu perfil.</p>
+          <p class="diet-guide-note">Meta calculada com a f&oacute;rmula de Mifflin-St Jeor a partir do seu perfil (idade, sexo, altura, peso e n&iacute;vel de atividade).</p>
           ${footerLinks}
         </div>
       `;
