@@ -708,7 +708,7 @@ h2 {
   width: 320px;
   height: 320px;
   object-fit: contain;
-  margin: 8px auto 4px;
+  margin: 0 auto;
 }
 
 .food-scan-total {
@@ -719,6 +719,7 @@ h2 {
 
 .food-scanner-panel {
   text-align: center;
+  gap: 4px;
 }
 
 .food-scanner-panel .panel-button {
