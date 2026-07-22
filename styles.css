@@ -674,7 +674,7 @@ h2 {
   cursor: pointer;
   color: #fff;
   background: linear-gradient(135deg, #5f27d2, #ac46d1);
-  padding: 3px 12px 3px 3px;
+  padding: 0 10px 0 0;
 }
 
 .food-scanner-card-mascot {
