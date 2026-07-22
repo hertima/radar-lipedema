@@ -3338,10 +3338,12 @@ const registerPanels = {
           (day, index) => `
             <article class="diet-plan-day${index === todayIndex ? " today" : ""}">
               <p class="section-label">Dia ${day.day}${index === todayIndex ? " &mdash; hoje" : ""}</p>
-              <p><strong>Caf&eacute; da manh&atilde;:</strong> ${day.breakfast}</p>
-              <p><strong>Almo&ccedil;o:</strong> ${day.lunch}</p>
-              <p><strong>Lanche:</strong> ${day.snack}</p>
-              <p><strong>Jantar:</strong> ${day.dinner}</p>
+              <div class="diet-plan-meals">
+                <div class="diet-plan-meal"><span class="round-icon teal"></span><div><strong>Caf&eacute; da manh&atilde;</strong><p>${day.breakfast}</p></div></div>
+                <div class="diet-plan-meal"><span class="round-icon orange"></span><div><strong>Almo&ccedil;o</strong><p>${day.lunch}</p></div></div>
+                <div class="diet-plan-meal"><span class="round-icon pink"></span><div><strong>Lanche</strong><p>${day.snack}</p></div></div>
+                <div class="diet-plan-meal"><span class="round-icon teal"></span><div><strong>Jantar</strong><p>${day.dinner}</p></div></div>
+              </div>
             </article>
           `
         )

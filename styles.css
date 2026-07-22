@@ -747,8 +747,8 @@ h2 {
 
 .nutrition-ring-wrap {
   position: relative;
-  width: 150px;
-  height: 150px;
+  width: 172px;
+  height: 172px;
   margin: 4px auto 0;
 }
 
@@ -761,14 +761,14 @@ h2 {
 
 .nutrition-ring-track {
   fill: none;
-  stroke: #eadbff;
-  stroke-width: 10;
+  stroke: #eee3fb;
+  stroke-width: 13;
 }
 
 .nutrition-ring-progress {
   fill: none;
   stroke: var(--purple);
-  stroke-width: 10;
+  stroke-width: 13;
   stroke-linecap: round;
   stroke-dasharray: 326.7;
   stroke-dashoffset: calc(326.7 - (326.7 * var(--percent, 0) / 100));
@@ -778,15 +778,18 @@ h2 {
 .nutrition-ring-label {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   text-align: center;
 }
 
 .nutrition-ring-label strong {
   display: block;
-  font-size: 28px;
-  line-height: 1.1;
+  font-size: 30px;
+  line-height: 1;
   color: var(--ink);
 }
 
@@ -1023,15 +1026,37 @@ h2 {
   background: #fff;
 }
 
-.diet-plan-day p {
-  margin: 4px 0 0;
+.diet-plan-day .section-label {
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.diet-plan-meals {
+  display: grid;
+  gap: 10px;
+}
+
+.diet-plan-meal {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.diet-plan-meal .round-icon {
+  margin-top: 3px;
+}
+
+.diet-plan-meal strong {
+  display: block;
   font-size: 13px;
   color: var(--ink);
 }
 
-.diet-plan-day .section-label {
-  margin-bottom: 2px;
+.diet-plan-meal p {
+  margin: 2px 0 0;
+  font-size: 13px;
   color: var(--muted);
+  line-height: 1.4;
 }
 
 .diet-plan-day.today {

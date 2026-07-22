@@ -1015,6 +1015,7 @@ app.post("/api/diet-plan", requireAuth, rateLimit("diet-plan", 5, 60 * 60 * 1000
           content:
             "Você monta um plano alimentar anti-inflamatório de 21 dias para uma pessoa com lipedema, para uso geral (não é uma prescrição individual). " +
             `Priorize estes grupos de alimentos: ${goodList}. Evite ou reduza estes: ${avoidList}. ` +
+            "Use apenas ingredientes baratos e fáceis de encontrar no Brasil. Não sugira ingredientes caros ou de luxo (por exemplo, NÃO use salmão) — prefira as opções mais acessíveis do mesmo grupo (por exemplo, sardinha em vez de salmão como peixe gorduroso). " +
             'Responda APENAS com JSON no formato {"days":[{"day":1,"breakfast":"string curta","lunch":"string curta","snack":"string curta","dinner":"string curta"}]}, com exatamente 21 itens no array "days", numerados de 1 a 21. ' +
             "Cada refeição deve ser uma sugestão curta (uma frase, sem receita detalhada), variando ao longo dos 21 dias.",
         },
