@@ -3203,12 +3203,14 @@ const registerPanels = {
           return `
             <div class="nutrition-meal-row">
               <span class="nutrition-meal-icon">${iconHtml}</span>
-              <div class="nutrition-meal-info">
+              <div class="nutrition-meal-info"${itemNames.length ? ` data-toast="${escapeHtml(`${meal.label}: ${description}`)}"` : ""}>
                 <strong>${meal.label}</strong>
                 <span class="nutrition-meal-kcal">${kcalLabel}</span>
                 <span class="nutrition-meal-desc">${itemNames.length ? '<span class="ia-badge">IA</span> ' : ""}${description}</span>
               </div>
-              <button class="nutrition-meal-add" type="button" data-panel-action="open-food-scan-camera" data-meal-slot="${meal.slot}" aria-label="Adicionar em ${meal.label}">+</button>
+              <button class="nutrition-meal-add" type="button" data-panel-action="open-food-scan-camera" data-meal-slot="${meal.slot}" aria-label="Adicionar em ${meal.label}">
+                <svg class="icon"><use href="#i-camera"></use></svg>
+              </button>
             </div>
           `;
         })
@@ -4138,6 +4140,12 @@ settingsPanelContent.addEventListener("click", (event) => {
   const nestedCloseTrigger = event.target.closest("[data-close-settings]");
   if (nestedCloseTrigger) {
     closeSettingsPanel();
+    return;
+  }
+
+  const nestedToastTrigger = event.target.closest("[data-toast]");
+  if (nestedToastTrigger) {
+    showToast(nestedToastTrigger.dataset.toast);
     return;
   }
 
