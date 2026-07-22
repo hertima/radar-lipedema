@@ -37,7 +37,6 @@ const photoSlotTemplates = [
   { name: "Costas", className: "back-view", placeholder: "imagem/imagem/referencia-costas.png" },
 ];
 const photoSlotImages = {};
-const insightIconMap = { pink: "i-heart", purple: "i-drop", orange: "i-sun", teal: "i-trend" };
 let recordHistory = [];
 let currentProfile = null;
 const phaseNames = ["Menstrual", "Folicular", "Ovulatória", "Lútea"];
@@ -951,35 +950,6 @@ function renderSymptomTable(history) {
   });
 }
 
-function renderHistoryInsightCards(history, cutoffDate) {
-  const container = document.querySelector(".history-insight-card");
-  if (!container) {
-    return;
-  }
-
-  const insights = computeInsights(history, cutoffDate);
-  if (!insights.length) {
-    container.innerHTML = `
-      <button type="button" data-toast="Continue registrando para desbloquear insights">
-        <span class="history-insight-icon teal"><svg class="icon"><use href="#i-trend"></use></svg></span>
-        <strong>Registre seus sintomas em pelo menos<br>2 dias para ver insights reais.</strong>
-      </button>
-    `;
-    return;
-  }
-
-  container.innerHTML = insights
-    .map(
-      (insight) => `
-        <button type="button" data-toast="Insight: ${insight.label} - ${insight.text}">
-          <span class="history-insight-icon ${insight.color}"><svg class="icon"><use href="#${insightIconMap[insight.color]}"></use></svg></span>
-          <strong>${insight.label}<br>${insight.text}</strong>
-        </button>
-      `
-    )
-    .join("");
-}
-
 function renderDeepInsights(history) {
   const container = document.querySelector(".insight-list.deep-insights");
   if (!container) {
@@ -1260,9 +1230,8 @@ function renderGamification(history) {
 }
 
 function renderHistoryPeriodViews() {
-  const { history: periodHistory, cutoffDate } = getPeriodFilteredHistory();
+  const { history: periodHistory } = getPeriodFilteredHistory();
   renderSymptomChart(periodHistory);
-  renderHistoryInsightCards(periodHistory, cutoffDate);
 }
 
 function renderDynamicData() {
