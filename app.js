@@ -1156,6 +1156,17 @@ function buildPremiumDataset() {
   };
 }
 
+const sexOptions = [
+  ["female", "Feminino"],
+  ["male", "Masculino"],
+];
+const activityLevelOptions = [
+  ["sedentary", "Sedentário (pouco ou nenhum exercício)"],
+  ["light", "Leve (exercício leve 1-3x/semana)"],
+  ["moderate", "Moderado (exercício moderado 3-5x/semana)"],
+  ["active", "Ativo (exercício intenso 6-7x/semana)"],
+  ["very_active", "Muito ativo (exercício intenso diário ou físico)"],
+];
 const dietMacroRatios = { carbs: 0.45, protein: 0.25, fat: 0.30 };
 const activityMultipliers = {
   sedentary: 1.2,
@@ -2606,18 +2617,7 @@ const settingsPanels = {
 
       const birthdate = currentProfile?.birthdate ? String(currentProfile.birthdate).slice(0, 10) : "";
       const sex = currentProfile?.sex || "";
-      const sexOptions = [
-        ["female", "Feminino"],
-        ["male", "Masculino"],
-      ];
       const activityLevel = currentProfile?.activityLevel || "";
-      const activityLevelOptions = [
-        ["sedentary", "Sedentário (pouco ou nenhum exercício)"],
-        ["light", "Leve (exercício leve 1-3x/semana)"],
-        ["moderate", "Moderado (exercício moderado 3-5x/semana)"],
-        ["active", "Ativo (exercício intenso 6-7x/semana)"],
-        ["very_active", "Muito ativo (exercício intenso diário ou físico)"],
-      ];
 
       const garmentLastReplacedAt = currentProfile?.garmentLastReplacedAt
         ? String(currentProfile.garmentLastReplacedAt).slice(0, 10)
@@ -3245,11 +3245,39 @@ const registerPanels = {
       const data = buildNutritionDashboard();
 
       if (!data.goal) {
+        const sex = currentProfile?.sex || "";
+        const activityLevel = currentProfile?.activityLevel || "";
+        const birthdate = currentProfile?.birthdate ? String(currentProfile.birthdate).slice(0, 10) : "";
+        const heightCm = currentProfile?.heightCm || "";
+        const weightKg = getLatestWeightKg() || "";
+        const today = new Date().toISOString().slice(0, 10);
+        const sexOptionsHtml = sexOptions.map(([value, label]) => `<option value="${value}"${value === sex ? " selected" : ""}>${label}</option>`).join("");
+        const activityOptionsHtml = activityLevelOptions
+          .map(([value, label]) => `<option value="${value}"${value === activityLevel ? " selected" : ""}>${label}</option>`)
+          .join("");
+
         return `
           <div class="smart-register-panel nutrition-dashboard-panel">
             <img src="imagem/imagem/scanner de alimentos-intro.png" alt="" class="food-scanner-mascot">
-            <p class="diet-guide-intro">Informe idade, sexo e n&iacute;vel de atividade em Ajustes &gt; Perfil, e registre seu peso em Registrar &gt; Peso, para calcular sua meta cal&oacute;rica individualizada.</p>
-            <button class="panel-button" type="button" data-settings-panel="profile">Completar perfil</button>
+            <p class="diet-guide-intro">Preencha os dados abaixo para calcular sua meta cal&oacute;rica e de macros individualizada.</p>
+            <form class="settings-form" data-panel-form="nutrition-onboarding">
+              <label class="settings-field">Altura <small>(cm)</small>
+                <input name="heightCm" type="number" min="100" max="230" inputmode="numeric" value="${heightCm}" placeholder="Ex.: 165">
+              </label>
+              <label class="settings-field">Data de nascimento
+                <input type="date" name="birthdate" value="${birthdate}" max="${today}">
+              </label>
+              <label class="settings-field">Sexo biol&oacute;gico
+                <select name="sex"><option value="">Selecione</option>${sexOptionsHtml}</select>
+              </label>
+              <label class="settings-field">N&iacute;vel de atividade f&iacute;sica
+                <select name="activityLevel"><option value="">Selecione</option>${activityOptionsHtml}</select>
+              </label>
+              <label class="settings-field">Peso atual <small>(kg)</small>
+                <input name="weightKg" type="number" min="30" max="300" step="0.1" inputmode="decimal" value="${weightKg}" placeholder="Ex.: 68">
+              </label>
+              <button class="panel-button" type="submit">Calcular minha meta</button>
+            </form>
             <button class="panel-button secondary" type="button" data-open-register-panel="food-scanner">Escanear um prato mesmo assim</button>
             <button class="panel-button secondary" type="button" data-open-register-panel="diet-plan">Plano alimentar de 21 dias</button>
             <button class="text-button diet-guide-link" type="button" data-open-register-panel="diet-guide">O que &eacute; alimenta&ccedil;&atilde;o anti-inflamat&oacute;ria? Ver orienta&ccedil;&otilde;es</button>
@@ -3557,19 +3585,23 @@ function openSettingsPanel(panelId) {
   settingsSheet.setAttribute("aria-hidden", "false");
 }
 
-function playPlanBuildingAnimation() {
-  settingsPanelTitle.innerHTML = "Preparando seu plano";
+function playPlanBuildingAnimation({
+  title = "Preparando seu plano",
+  message = "Estamos calculando sua meta individualizada&hellip;",
+  steps = ["Analisando seu perfil", "Calculando seu objetivo calórico", "Montando seu painel"],
+  task = null,
+  onDone = () => openRegisterPanel("nutrition-dashboard"),
+} = {}) {
+  settingsPanelTitle.innerHTML = title;
   settingsPanelContent.innerHTML = `
     <div class="plan-building-panel">
       <div class="nutrition-ring-wrap">
         <div class="nutrition-ring" data-plan-ring style="--percent: 0"></div>
         <div class="nutrition-ring-label"><strong data-plan-percent>0%</strong></div>
       </div>
-      <p class="plan-building-title">Estamos calculando sua meta individualizada&hellip;</p>
+      <p class="plan-building-title">${message}</p>
       <ul class="plan-building-steps">
-        <li data-plan-step="0"><span class="plan-step-check"><svg class="icon"><use href="#i-check"></use></svg></span><span>Analisando seu perfil</span></li>
-        <li data-plan-step="1"><span class="plan-step-check"><svg class="icon"><use href="#i-check"></use></svg></span><span>Calculando seu objetivo cal&oacute;rico</span></li>
-        <li data-plan-step="2"><span class="plan-step-check"><svg class="icon"><use href="#i-check"></use></svg></span><span>Montando seu painel</span></li>
+        ${steps.map((label, index) => `<li data-plan-step="${index}"><span class="plan-step-check"><svg class="icon"><use href="#i-check"></use></svg></span><span>${label}</span></li>`).join("")}
       </ul>
     </div>
   `;
@@ -3578,26 +3610,43 @@ function playPlanBuildingAnimation() {
 
   const ring = settingsPanelContent.querySelector("[data-plan-ring]");
   const percentLabel = settingsPanelContent.querySelector("[data-plan-percent]");
-  const steps = Array.from(settingsPanelContent.querySelectorAll("[data-plan-step]"));
-  const stepThresholds = [35, 70, 100];
+  const stepEls = Array.from(settingsPanelContent.querySelectorAll("[data-plan-step]"));
+  const ceiling = task ? 90 : 100;
+  const stepThresholds = stepEls.map((_, index) => Math.round(((index + 1) / stepEls.length) * ceiling));
 
   let percent = 0;
   let stepIndex = 0;
+  let settled = false;
+
   const timer = setInterval(() => {
-    percent = Math.min(100, percent + 4);
+    if (settled) {
+      return;
+    }
+    percent = Math.min(ceiling, percent + 4);
     ring.style.setProperty("--percent", percent);
     percentLabel.textContent = `${percent}%`;
 
     if (stepIndex < stepThresholds.length && percent >= stepThresholds[stepIndex]) {
-      steps[stepIndex]?.classList.add("done");
+      stepEls[stepIndex]?.classList.add("done");
       stepIndex += 1;
     }
 
-    if (percent >= 100) {
+    if (!task && percent >= 100) {
       clearInterval(timer);
-      setTimeout(() => openRegisterPanel("nutrition-dashboard"), 450);
+      setTimeout(() => onDone(), 450);
     }
   }, 55);
+
+  if (task) {
+    Promise.resolve(task()).then((result) => {
+      settled = true;
+      clearInterval(timer);
+      stepEls.forEach((el) => el.classList.add("done"));
+      ring.style.setProperty("--percent", 100);
+      percentLabel.textContent = "100%";
+      setTimeout(() => onDone(result), 450);
+    });
+  }
 }
 
 function openRegisterPanel(panelId) {
@@ -4076,6 +4125,35 @@ settingsPanelContent.addEventListener("submit", (event) => {
     return;
   }
 
+  if (form && form.dataset.panelForm === "nutrition-onboarding") {
+    const formData = new FormData(form);
+    const heightCm = formData.get("heightCm") || null;
+    const birthdate = formData.get("birthdate") || null;
+    const sex = formData.get("sex") || null;
+    const activityLevel = formData.get("activityLevel") || null;
+    const weightRaw = Number(formData.get("weightKg"));
+    const weightKg = Number.isFinite(weightRaw) && weightRaw > 0 ? weightRaw : null;
+
+    const hadGoalBefore = Boolean(computeCalorieGoal(currentProfile, getLatestWeightKg()));
+
+    const tasks = [saveProfileToServer({ heightCm, birthdate, sex, activityLevel })];
+    if (weightKg) {
+      tasks.push(saveRecordToServer("save-weight", { weight: weightKg, savedAt: new Date().toISOString() }));
+    }
+
+    Promise.all(tasks).then(async () => {
+      await loadServerState();
+      const hasGoalNow = Boolean(computeCalorieGoal(currentProfile, getLatestWeightKg()));
+      if (!hadGoalBefore && hasGoalNow) {
+        playPlanBuildingAnimation();
+        return;
+      }
+      showToast("Dados salvos");
+      openRegisterPanel("nutrition-dashboard");
+    });
+    return;
+  }
+
   if (form && form.dataset.panelForm === "change-password") {
     const formData = new FormData(form);
     const currentPassword = String(formData.get("currentPassword") || "");
@@ -4382,16 +4460,21 @@ settingsPanelContent.addEventListener("click", (event) => {
   }
 
   if (actionName === "generate-diet-plan") {
-    settingsPanelContent.innerHTML = `<div class="smart-register-panel diet-plan-panel"><p class="diet-guide-intro">Gerando seu plano de 21 dias com IA&hellip; isso pode levar alguns segundos.</p></div>`;
-    apiRequest("/api/diet-plan", { method: "POST" }).then(async (result) => {
-      if (!result || result.ok === false) {
-        showToast(result?.error || "Não foi possível gerar o plano agora.");
+    playPlanBuildingAnimation({
+      title: "Gerando seu plano",
+      message: "Estamos montando seu plano de 21 dias&hellip;",
+      steps: ["Lendo o guia anti-inflamatório", "Montando os 21 dias", "Organizando seu plano"],
+      task: () => apiRequest("/api/diet-plan", { method: "POST" }),
+      onDone: async (result) => {
+        if (!result || result.ok === false) {
+          showToast(result?.error || "Não foi possível gerar o plano agora.");
+          openRegisterPanel("diet-plan");
+          return;
+        }
+        await loadServerState();
         openRegisterPanel("diet-plan");
-        return;
-      }
-      await loadServerState();
-      openRegisterPanel("diet-plan");
-      showToast("Plano de 21 dias gerado");
+        showToast("Plano de 21 dias gerado");
+      },
     });
     return;
   }
