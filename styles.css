@@ -705,8 +705,8 @@ h2 {
 
 .food-scanner-mascot {
   display: block;
-  width: 200px;
-  height: 200px;
+  width: 320px;
+  height: 320px;
   object-fit: contain;
   margin: 8px auto 4px;
 }
