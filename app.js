@@ -1719,16 +1719,29 @@ function renderFoodScanCamera() {
   body.insertAdjacentHTML(
     "beforeend",
     `
-      <div class="photo-camera-capture" data-food-camera-capture>
+      <div class="photo-camera-capture food-scan-camera" data-food-camera-capture>
         <section class="camera-capture-card" aria-label="Câmera para o prato">
           <div class="camera-preview-frame">
             <video autoplay muted playsinline data-food-camera-preview></video>
             <span class="camera-loading">Abrindo câmera...</span>
+            <span class="food-scan-frame-corner tl" aria-hidden="true"></span>
+            <span class="food-scan-frame-corner tr" aria-hidden="true"></span>
+            <span class="food-scan-frame-corner bl" aria-hidden="true"></span>
+            <span class="food-scan-frame-corner br" aria-hidden="true"></span>
           </div>
-          <div class="camera-action-row">
-            <button class="panel-button" type="button" data-food-camera-action="capture">Tirar foto</button>
-            <button class="panel-button secondary" type="button" data-food-camera-action="gallery">Galeria</button>
-            <button class="panel-button secondary" type="button" data-food-camera-action="close">Cancelar</button>
+          <p class="food-scan-camera-hint">Os alimentos devem estar bem iluminados e dentro do enquadramento.</p>
+          <div class="food-scan-camera-actions">
+            <button class="food-scan-camera-side" type="button" data-food-camera-action="gallery">
+              <svg class="icon"><use href="#i-gallery"></use></svg>
+              <span>Galeria</span>
+            </button>
+            <button class="food-scan-camera-shutter" type="button" data-food-camera-action="capture" aria-label="Tirar foto">
+              <svg class="icon"><use href="#i-camera"></use></svg>
+            </button>
+            <button class="food-scan-camera-side" type="button" data-food-camera-action="close">
+              <span class="x-icon"></span>
+              <span>Cancelar</span>
+            </button>
           </div>
         </section>
       </div>
