@@ -554,6 +554,10 @@ h2 {
   background: linear-gradient(135deg, #5f27d2, #ac46d1);
 }
 
+.insights-hero {
+  cursor: pointer;
+}
+
 .hero-card,
 .insights-hero {
   margin-bottom: 18px;
