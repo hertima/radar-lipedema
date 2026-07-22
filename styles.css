@@ -670,11 +670,11 @@ h2 {
 .food-scanner-card {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   cursor: pointer;
   color: #fff;
   background: linear-gradient(135deg, #5f27d2, #ac46d1);
-  padding: 0 10px 0 0;
+  padding: 0 6px 0 0;
 }
 
 .food-scanner-card-mascot {
