@@ -394,6 +394,13 @@ a {
   max-width: 720px;
 }
 
+.lp-checklist-heading {
+  font-size: clamp(24px, 5.5vw, 32px);
+  line-height: 1.3;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
 .lp-checklist-list {
   list-style: none;
   margin: 0 0 16px;
@@ -425,6 +432,22 @@ a {
   color: rgba(255, 255, 255, 0.8);
   font-weight: 600;
   font-size: clamp(17px, 4.2vw, 19px);
+}
+
+.lp-realize {
+  padding: 28px 0;
+}
+
+.lp-realize .wrap {
+  max-width: 720px;
+}
+
+.lp-audience {
+  padding: 32px 0;
+}
+
+.lp-audience-list {
+  margin-top: 20px;
 }
 
 .lp-problem-foot {
@@ -579,55 +602,6 @@ a {
 .lp-step p {
   color: rgba(255, 255, 255, 0.82);
   font-size: 16.5px;
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* ---------- Bonus / included features ---------- */
-
-.lp-bonus {
-  padding: 32px 0;
-}
-
-.lp-bonus-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-  gap: 14px;
-}
-
-.lp-bonus-card {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 20px;
-}
-
-.lp-bonus-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--soft);
-  color: var(--purple);
-  margin-bottom: 16px;
-}
-
-.lp-bonus-icon .icon {
-  width: 22px;
-  height: 22px;
-}
-
-.lp-bonus-card h3 {
-  font-size: 19px;
-  margin: 0 0 8px;
-  color: var(--purple-deep);
-}
-
-.lp-bonus-card p {
-  color: var(--muted);
-  font-size: 16px;
   line-height: 1.5;
   margin: 0;
 }
