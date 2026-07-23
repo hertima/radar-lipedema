@@ -492,7 +492,7 @@ a {
 
 .lp-feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: 1fr;
   gap: 4px;
   background: var(--line);
   border: 1px solid var(--line);
@@ -539,6 +539,12 @@ a {
   font-size: 16.5px;
   line-height: 1.5;
   margin: 0;
+}
+
+@media (min-width: 760px) {
+  .lp-feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* ---------- How it works ---------- */
